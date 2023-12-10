@@ -11,6 +11,7 @@ func init() {
 	configCmd := config.NewConfigCmd()
 	configCmd.AddCommand(
 		config.NewValidateCmd(),
+		config.NewInvokeCmd(),
 	)
 	rootCmd.AddCommand(configCmd)
 }

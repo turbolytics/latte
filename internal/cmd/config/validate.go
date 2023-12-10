@@ -6,9 +6,9 @@ import (
 	"github.com/turbolytics/collector/internal"
 )
 
-var configPath string
-
 func NewValidateCmd() *cobra.Command {
+	var configPath string
+
 	var validateCmd = &cobra.Command{
 		Use:   "validate",
 		Short: "Validate a signal collector config",

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sources"
 	"github.com/turbolytics/collector/internal/sources/postgres"
@@ -12,7 +13,7 @@ import (
 
 type Metric struct {
 	Name string
-	Type string // Enum
+	Type metrics.Type
 }
 
 type Schedule struct {
@@ -32,7 +33,7 @@ type Sink struct {
 }
 
 type Source struct {
-	Type    string
+	Type    sources.Type
 	Sourcer sources.Sourcer
 	Config  map[string]any
 }
@@ -53,8 +54,13 @@ func NewConfigFromFile(name string) (*Config, error) {
 	return NewConfig(bs)
 }
 
+// initSource initializes the correct source.
+func initSource(c *Config) error {
+	return nil
+}
+
 // NewConfig initializes a config from yaml bytes.
-// NewConfig initializes all sub types as well.
+// NewConfig initializes all subtypes as well.
 func NewConfig(bs []byte) (*Config, error) {
 	var conf Config
 	if err := yaml.Unmarshal(bs, &conf); err != nil {
@@ -64,7 +70,7 @@ func NewConfig(bs []byte) (*Config, error) {
 	var s sources.Sourcer
 	var err error
 	switch conf.Source.Type {
-	case "postgres":
+	case sources.TypePostgres:
 		s, err = postgres.NewFromGenericConfig(conf.Source.Config)
 	}
 
