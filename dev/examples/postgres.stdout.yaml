@@ -23,5 +23,3 @@ source:
 sinks:
   console:
     type: console
-    config:
-      target: stdout

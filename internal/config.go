@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
+	"github.com/turbolytics/collector/internal/sinks/console"
+	"github.com/turbolytics/collector/internal/sinks/http"
 	"github.com/turbolytics/collector/internal/sources"
 	"github.com/turbolytics/collector/internal/sources/postgres"
 	"gopkg.in/yaml.v3"
@@ -27,7 +29,7 @@ type Collector struct {
 }
 
 type Sink struct {
-	Type   string
+	Type   sinks.Type
 	Sinker sinks.Sinker
 	Config map[string]any
 }
@@ -56,6 +58,39 @@ func NewConfigFromFile(name string) (*Config, error) {
 
 // initSource initializes the correct source.
 func initSource(c *Config) error {
+	var s sources.Sourcer
+	var err error
+	switch c.Source.Type {
+	case sources.TypePostgres:
+		s, err = postgres.NewFromGenericConfig(c.Source.Config)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	c.Source.Sourcer = s
+	return nil
+}
+
+// initSinks initializes all the outputs
+func initSinks(c *Config) error {
+	for _, v := range c.Sinks {
+		switch v.Type {
+		case sinks.TypeConsole:
+			sink, err := console.NewFromGenericConfig(v.Config)
+			if err != nil {
+				return err
+			}
+			v.Sinker = sink
+		case sinks.TypeHTTP:
+			sink, err := http.NewFromGenericConfig(v.Config)
+			if err != nil {
+				return err
+			}
+			v.Sinker = sink
+		}
+	}
 	return nil
 }
 
@@ -67,18 +102,13 @@ func NewConfig(bs []byte) (*Config, error) {
 		return nil, err
 	}
 
-	var s sources.Sourcer
-	var err error
-	switch conf.Source.Type {
-	case sources.TypePostgres:
-		s, err = postgres.NewFromGenericConfig(conf.Source.Config)
-	}
-
-	if err != nil {
+	if err := initSource(&conf); err != nil {
 		return nil, err
 	}
 
-	conf.Source.Sourcer = s
+	if err := initSinks(&conf); err != nil {
+		return nil, err
+	}
 
 	fmt.Printf("%+v\n", conf)
 	return &conf, nil
