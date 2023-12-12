@@ -2,6 +2,7 @@ package console
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 )
@@ -11,7 +12,8 @@ type Console struct {
 }
 
 func (c *Console) Write(bs []byte) (int, error) {
-	return c.w.Write(bs)
+	fmt.Println(string(bs))
+	return 0, nil
 }
 
 func NewFromGenericConfig(m map[string]any) (*Console, error) {

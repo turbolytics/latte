@@ -20,8 +20,8 @@ type Postgres struct {
 	db     *sql.DB
 }
 
-func resultsToMetrics(results []map[string]any) ([]metrics.Metric, error) {
-	var ms []metrics.Metric
+func resultsToMetrics(results []map[string]any) ([]*metrics.Metric, error) {
+	var ms []*metrics.Metric
 	for _, r := range results {
 		val, ok := r["value"]
 		if !ok {
@@ -44,13 +44,13 @@ func resultsToMetrics(results []map[string]any) ([]metrics.Metric, error) {
 		for k, v := range r {
 			m.Tags[k] = v.(string)
 		}
-		ms = append(ms, m)
+		ms = append(ms, &m)
 	}
 
 	return ms, nil
 }
 
-func (p *Postgres) Source(ctx context.Context) ([]metrics.Metric, error) {
+func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	rows, err := p.db.QueryContext(ctx, p.config.SQL)
 	if err != nil {
 		return nil, err

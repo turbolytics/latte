@@ -74,7 +74,7 @@ func initSource(c *Config) error {
 
 // initSinks initializes all the outputs
 func initSinks(c *Config) error {
-	for _, v := range c.Sinks {
+	for k, v := range c.Sinks {
 		switch v.Type {
 		case sinks.TypeConsole:
 			sink, err := console.NewFromGenericConfig(v.Config)
@@ -82,12 +82,14 @@ func initSinks(c *Config) error {
 				return err
 			}
 			v.Sinker = sink
+			c.Sinks[k] = v
 		case sinks.TypeHTTP:
 			sink, err := http.NewFromGenericConfig(v.Config)
 			if err != nil {
 				return err
 			}
 			v.Sinker = sink
+			c.Sinks[k] = v
 		}
 	}
 	return nil

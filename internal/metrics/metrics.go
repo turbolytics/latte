@@ -8,10 +8,10 @@ const (
 )
 
 type Metric struct {
-	Name  string
-	Value float64
-	Type  Type
-	Tags  map[string]string
+	Name  string            `json:"name"`
+	Value float64           `json:"value"`
+	Type  Type              `json:"type"`
+	Tags  map[string]string `json:"tags"`
 }
 
 func New() Metric {

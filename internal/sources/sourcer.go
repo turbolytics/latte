@@ -12,5 +12,5 @@ const (
 )
 
 type Sourcer interface {
-	Source(ctx context.Context) ([]metrics.Metric, error)
+	Source(ctx context.Context) ([]*metrics.Metric, error)
 }
