@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/turbolytics/collector/internal"
@@ -15,8 +16,9 @@ func NewInvokeCmd() *cobra.Command {
 		Short: "Invoke a signal collection",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
 			fmt.Println("invoke")
-			fmt.Println(configPath)
+
 			config, err := internal.NewConfigFromFile(configPath)
 			if err != nil {
 				panic(err)
@@ -26,7 +28,7 @@ func NewInvokeCmd() *cobra.Command {
 				panic(err)
 			}
 
-			_, err = c.Invoke()
+			_, err = c.Invoke(ctx)
 			if err != nil {
 				panic(err)
 			}

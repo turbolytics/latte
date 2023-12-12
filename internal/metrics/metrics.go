@@ -13,3 +13,9 @@ type Metric struct {
 	Type  Type
 	Tags  map[string]string
 }
+
+func New() Metric {
+	return Metric{
+		Tags: make(map[string]string),
+	}
+}

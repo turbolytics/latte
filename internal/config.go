@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
@@ -109,7 +108,5 @@ func NewConfig(bs []byte) (*Config, error) {
 	if err := initSinks(&conf); err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("%+v\n", conf)
 	return &conf, nil
 }
