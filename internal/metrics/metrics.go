@@ -11,5 +11,5 @@ type Metric struct {
 	Name  string
 	Value float64
 	Type  Type
-	Tags  []string
+	Tags  map[string]string
 }
