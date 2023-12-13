@@ -1,0 +1,19 @@
+api:
+  enabled: true
+  address: "0.0.0.0:8686"
+
+sources:
+  signals_source:
+    type: "http_server"
+    address: "0.0.0.0:9999"
+    path: "/metrics"
+    encoding: json
+
+sinks:
+  console:
+    type: console
+    inputs:
+      - signals_source
+    target: stdout
+    encoding:
+      codec: json
