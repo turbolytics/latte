@@ -27,7 +27,7 @@ func Test_resultsToMetrics_singleMetric(t *testing.T) {
 
 	ms, err := resultsToMetrics(rs)
 	assert.NoError(t, err)
-	assert.Equal(t, []metrics.Metric{
+	assert.Equal(t, []*metrics.Metric{
 		{
 			Value: 2,
 			Tags: map[string]string{
