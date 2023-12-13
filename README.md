@@ -4,7 +4,6 @@ Collect metrics from a variety of operational sources
 ## Dev
 
 - Start Postgres
-- 
 ```
 docker-compose -f dev/compose.yaml up -d
 ```
