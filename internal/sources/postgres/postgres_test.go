@@ -27,6 +27,12 @@ func Test_resultsToMetrics_singleMetric(t *testing.T) {
 
 	ms, err := resultsToMetrics(rs)
 	assert.NoError(t, err)
+	// not sure how to cleanly do this
+	// right now just remove the dynamic field from
+	// output...
+	for _, m := range ms {
+		m.UUID = ""
+	}
 	assert.Equal(t, []*metrics.Metric{
 		{
 			Value: 2,
