@@ -25,3 +25,8 @@ source:
 sinks:
   console:
     type: console
+
+  vector:
+    type: http
+    config:
+      uri: "http://127.0.0.1:9999/metrics"

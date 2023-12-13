@@ -1,8 +1,10 @@
 package internal
 
 import (
-	"fmt"
+	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
+	"github.com/turbolytics/collector/internal/sinks/console"
+	"github.com/turbolytics/collector/internal/sinks/http"
 	"github.com/turbolytics/collector/internal/sources"
 	"github.com/turbolytics/collector/internal/sources/postgres"
 	"gopkg.in/yaml.v3"
@@ -12,7 +14,7 @@ import (
 
 type Metric struct {
 	Name string
-	Type string // Enum
+	Type metrics.Type
 }
 
 type Schedule struct {
@@ -26,13 +28,13 @@ type Collector struct {
 }
 
 type Sink struct {
-	Type   string
+	Type   sinks.Type
 	Sinker sinks.Sinker
 	Config map[string]any
 }
 
 type Source struct {
-	Type    string
+	Type    sources.Type
 	Sourcer sources.Sourcer
 	Config  map[string]any
 }
@@ -53,27 +55,60 @@ func NewConfigFromFile(name string) (*Config, error) {
 	return NewConfig(bs)
 }
 
+// initSource initializes the correct source.
+func initSource(c *Config) error {
+	var s sources.Sourcer
+	var err error
+	switch c.Source.Type {
+	case sources.TypePostgres:
+		s, err = postgres.NewFromGenericConfig(c.Source.Config)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	c.Source.Sourcer = s
+	return nil
+}
+
+// initSinks initializes all the outputs
+func initSinks(c *Config) error {
+	for k, v := range c.Sinks {
+		switch v.Type {
+		case sinks.TypeConsole:
+			sink, err := console.NewFromGenericConfig(v.Config)
+			if err != nil {
+				return err
+			}
+			v.Sinker = sink
+			c.Sinks[k] = v
+		case sinks.TypeHTTP:
+			sink, err := http.NewFromGenericConfig(v.Config)
+			if err != nil {
+				return err
+			}
+			v.Sinker = sink
+			c.Sinks[k] = v
+		}
+	}
+	return nil
+}
+
 // NewConfig initializes a config from yaml bytes.
-// NewConfig initializes all sub types as well.
+// NewConfig initializes all subtypes as well.
 func NewConfig(bs []byte) (*Config, error) {
 	var conf Config
 	if err := yaml.Unmarshal(bs, &conf); err != nil {
 		return nil, err
 	}
 
-	var s sources.Sourcer
-	var err error
-	switch conf.Source.Type {
-	case "postgres":
-		s, err = postgres.NewFromGenericConfig(conf.Source.Config)
-	}
-
-	if err != nil {
+	if err := initSource(&conf); err != nil {
 		return nil, err
 	}
 
-	conf.Source.Sourcer = s
-
-	fmt.Printf("%+v\n", conf)
+	if err := initSinks(&conf); err != nil {
+		return nil, err
+	}
 	return &conf, nil
 }

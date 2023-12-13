@@ -5,10 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-
-}
-
 func NewConfigCmd() *cobra.Command {
 	var configCmd = &cobra.Command{
 		Use:   "config",
