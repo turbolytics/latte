@@ -24,7 +24,10 @@ func TestNewConfigFromFile(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.fileName, func(t *testing.T) {
 			fPath := path.Join(exampleDir, tc.fileName)
-			_, err := NewConfigFromFile(fPath)
+			_, err := NewConfigFromFile(
+				fPath,
+				WithJustValidation(true),
+			)
 			assert.NoError(t, err)
 		})
 	}
