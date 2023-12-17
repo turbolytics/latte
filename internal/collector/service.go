@@ -25,13 +25,14 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 
 	for _, col := range s.collectors {
+		colCopy := col
 		_, err := s.scheduler.NewJob(
 			gocron.DurationJob(
-				col.Config.Schedule.Interval,
+				colCopy.Config.Schedule.Interval,
 			),
 			gocron.NewTask(
 				func(ctx context.Context) {
-					col.InvokeHandleError(ctx)
+					colCopy.InvokeHandleError(ctx)
 				},
 				ctx,
 			),

@@ -57,13 +57,25 @@ func (c *Collector) Invoke(ctx context.Context) ([]*metrics.Metric, error) {
 	c.logger.Info(
 		"collector.Invoke",
 		zap.String("id", id.String()),
+		zap.String("name", c.Config.Name),
 	)
 	ctx = context.WithValue(ctx, "id", id)
 	ms, err := c.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
-	err = c.Sink(ctx, ms)
+
+	// only sink if metrics are present:
+	if len(ms) > 0 {
+		err = c.Sink(ctx, ms)
+	} else {
+		c.logger.Warn(
+			"collector.Invoke",
+			zap.String("msg", "no metrics found"),
+			zap.String("id", id.String()),
+			zap.String("name", c.Config.Name),
+		)
+	}
 	return ms, err
 }
 

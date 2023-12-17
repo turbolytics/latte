@@ -12,7 +12,9 @@ type Console struct {
 }
 
 func (c *Console) Write(bs []byte) (int, error) {
+	fmt.Println("here1")
 	fmt.Println(string(bs))
+	fmt.Println("here2")
 	return 0, nil
 }
 
