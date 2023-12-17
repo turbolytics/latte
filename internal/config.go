@@ -9,6 +9,7 @@ import (
 	"github.com/turbolytics/collector/internal/sources/postgres"
 	"gopkg.in/yaml.v3"
 	"os"
+	"path"
 	"time"
 )
 
@@ -99,6 +100,28 @@ func initSinks(c *Config) error {
 		}
 	}
 	return nil
+}
+
+func NewConfigsFromDir(dirname string) ([]*Config, error) {
+	files, err := os.ReadDir(dirname)
+	if err != nil {
+		return nil, err
+	}
+	var configs []*Config
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		n := path.Join(dirname, f.Name())
+		c, err := NewConfigFromFile(n)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, c)
+	}
+	return configs, nil
 }
 
 func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {

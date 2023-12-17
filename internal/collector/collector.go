@@ -3,11 +3,14 @@ package collector
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/turbolytics/collector/internal"
 	"github.com/turbolytics/collector/internal/metrics"
+	"go.uber.org/zap"
 )
 
 type Collector struct {
+	logger *zap.Logger
 	Config *internal.Config
 }
 
@@ -25,7 +28,7 @@ func (c *Collector) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	return ms, nil
 }
 
-func (c *Collector) Sink(metrics []*metrics.Metric) error {
+func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 	// need to add a serializer
 	bs, err := json.Marshal(metrics)
 	if err != nil {
@@ -40,17 +43,56 @@ func (c *Collector) Sink(metrics []*metrics.Metric) error {
 	return nil
 }
 
+// InvokeHandleError will log any Invoke errors and not return them.
+// Useful for async scheduling.
+func (c *Collector) InvokeHandleError(ctx context.Context) {
+	_, err := c.Invoke(ctx)
+	if err != nil {
+		c.logger.Error(err.Error())
+	}
+}
+
 func (c *Collector) Invoke(ctx context.Context) ([]*metrics.Metric, error) {
+	id := uuid.New()
+	c.logger.Info(
+		"collector.Invoke",
+		zap.String("id", id.String()),
+	)
+	ctx = context.WithValue(ctx, "id", id)
 	ms, err := c.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
-	err = c.Sink(ms)
+	err = c.Sink(ctx, ms)
 	return ms, err
 }
 
-func New(config *internal.Config) (*Collector, error) {
-	return &Collector{
+type CollectorOpt func(*Collector)
+
+func WithCollectorLogger(l *zap.Logger) CollectorOpt {
+	return func(c *Collector) {
+		c.logger = l
+	}
+}
+
+func New(config *internal.Config, opts ...CollectorOpt) (*Collector, error) {
+	c := &Collector{
 		Config: config,
-	}, nil
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c, nil
+}
+
+func NewFromConfigs(configs []*internal.Config, opts ...CollectorOpt) ([]*Collector, error) {
+	var cs []*Collector
+	for _, config := range configs {
+		coll, err := New(config, opts...)
+		if err != nil {
+			return nil, err
+		}
+		cs = append(cs, coll)
+	}
+	return cs, nil
 }
