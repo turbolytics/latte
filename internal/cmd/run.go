@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/turbolytics/collector/internal"
 	"github.com/turbolytics/collector/internal/collector"
+	"github.com/turbolytics/collector/internal/collector/service"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +33,7 @@ func NewRunCmd() *cobra.Command {
 
 			cs, err := collector.NewFromConfigs(
 				confs,
-				collector.WithCollectorLogger(logger),
+				collector.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
@@ -44,9 +45,9 @@ func NewRunCmd() *cobra.Command {
 			)
 
 			// schedule all collectors at their desired intervals
-			s, err := collector.NewService(
+			s, err := service.NewService(
 				cs,
-				collector.WithServiceLogger(logger),
+				service.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)

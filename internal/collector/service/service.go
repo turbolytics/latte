@@ -1,14 +1,15 @@
-package collector
+package service
 
 import (
 	"context"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/turbolytics/collector/internal/collector"
 	"go.uber.org/zap"
 )
 
 type Service struct {
 	logger     *zap.Logger
-	collectors []*Collector
+	collectors []*collector.Collector
 	scheduler  gocron.Scheduler
 }
 
@@ -48,15 +49,15 @@ func (s *Service) Run(ctx context.Context) error {
 	return nil
 }
 
-type ServiceOption func(*Service)
+type Option func(*Service)
 
-func WithServiceLogger(l *zap.Logger) ServiceOption {
+func WithLogger(l *zap.Logger) Option {
 	return func(s *Service) {
 		s.logger = l
 	}
 }
 
-func NewService(cs []*Collector, opts ...ServiceOption) (*Service, error) {
+func NewService(cs []*collector.Collector, opts ...Option) (*Service, error) {
 	sch, err := gocron.NewScheduler()
 	if err != nil {
 		return nil, err

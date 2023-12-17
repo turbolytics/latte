@@ -79,15 +79,15 @@ func (c *Collector) Invoke(ctx context.Context) ([]*metrics.Metric, error) {
 	return ms, err
 }
 
-type CollectorOpt func(*Collector)
+type Option func(*Collector)
 
-func WithCollectorLogger(l *zap.Logger) CollectorOpt {
+func WithLogger(l *zap.Logger) Option {
 	return func(c *Collector) {
 		c.logger = l
 	}
 }
 
-func New(config *internal.Config, opts ...CollectorOpt) (*Collector, error) {
+func New(config *internal.Config, opts ...Option) (*Collector, error) {
 	c := &Collector{
 		Config: config,
 	}
@@ -97,7 +97,7 @@ func New(config *internal.Config, opts ...CollectorOpt) (*Collector, error) {
 	return c, nil
 }
 
-func NewFromConfigs(configs []*internal.Config, opts ...CollectorOpt) ([]*Collector, error) {
+func NewFromConfigs(configs []*internal.Config, opts ...Option) ([]*Collector, error) {
 	var cs []*Collector
 	for _, config := range configs {
 		coll, err := New(config, opts...)

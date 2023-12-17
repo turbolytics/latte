@@ -26,8 +26,7 @@ func NewInvokeCmd() *cobra.Command {
 			}
 			c, err := collector.New(
 				config,
-				collector.WithCollectorLogger(logger),
-
+				collector.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
