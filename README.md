@@ -3,16 +3,10 @@ Collect metrics from a variety of operational sources
 
 ## Dev
 
-- Start Postgres
+- Start Postgres & Vector
 ```
 docker-compose -f dev/compose.yaml up -d
 ```
-
-- Start Vector 
-```
-docker run -v $PWD/vector.yaml:/etc/vector/vector.yaml:ro -p 8686:8686 -p 9999:9999 timberio/vector:0.34.1-debian
-```
-
 
 ### Invoke Locally
 
@@ -27,17 +21,9 @@ go run cmd/main.go config invoke --config=/Users/danielmican/code/github.com/tur
 {"name":"core.users.signups.total","path":"/metrics","source_type":"http_server","tags":{"customer":"amazon"},"timestamp":"2023-12-12T13:33:27.564680676Z","type":"COUNT","value":2}
 ```
 
-## API
+## Docker
 
-### Data Types
-
-### REST
-
-- `GET /collectors`
- 
-Lists all collectors.
-
-- `POST /collectors`
-
-Create a new collector.
-
+```
+docker build -t signals/collector .
+docker run -v $(PWD)/dev:/tmp signals-collector config validate --config=/tmp/examples/postgres.http.stdout.yaml
+```
