@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/turbolytics/collector/internal"
 	"github.com/turbolytics/collector/internal/collector"
+	"go.uber.org/zap"
 )
 
 func NewInvokeCmd() *cobra.Command {
@@ -15,12 +16,18 @@ func NewInvokeCmd() *cobra.Command {
 		Short: "Invoke a signal collection",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
+			logger, _ := zap.NewProduction()
+			defer logger.Sync() // flushes buffer, if any
+
 			ctx := context.Background()
 			config, err := internal.NewConfigFromFile(configPath)
 			if err != nil {
 				panic(err)
 			}
-			c, err := collector.New(config)
+			c, err := collector.New(
+				config,
+				collector.WithLogger(logger),
+			)
 			if err != nil {
 				panic(err)
 			}

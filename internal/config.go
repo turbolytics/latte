@@ -9,6 +9,7 @@ import (
 	"github.com/turbolytics/collector/internal/sources/postgres"
 	"gopkg.in/yaml.v3"
 	"os"
+	"path"
 	"time"
 )
 
@@ -39,20 +40,23 @@ type Source struct {
 	Config  map[string]any
 }
 
+type ConfigOption func(*Config)
+
+func WithJustValidation(validate bool) ConfigOption {
+	return func(c *Config) {
+		c.validate = validate
+	}
+}
+
 type Config struct {
 	Name     string
 	Metric   Metric
 	Schedule Schedule
 	Source   Source
 	Sinks    map[string]Sink
-}
 
-func NewConfigFromFile(name string) (*Config, error) {
-	bs, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	return NewConfig(bs)
+	// validate will skip initializing network dependencies
+	validate bool
 }
 
 // initSource initializes the correct source.
@@ -61,7 +65,10 @@ func initSource(c *Config) error {
 	var err error
 	switch c.Source.Type {
 	case sources.TypePostgres:
-		s, err = postgres.NewFromGenericConfig(c.Source.Config)
+		s, err = postgres.NewFromGenericConfig(
+			c.Source.Config,
+			c.validate,
+		)
 	}
 
 	if err != nil {
@@ -95,10 +102,45 @@ func initSinks(c *Config) error {
 	return nil
 }
 
+func NewConfigsFromDir(dirname string) ([]*Config, error) {
+	files, err := os.ReadDir(dirname)
+	if err != nil {
+		return nil, err
+	}
+	var configs []*Config
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		n := path.Join(dirname, f.Name())
+		c, err := NewConfigFromFile(n)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, c)
+	}
+	return configs, nil
+}
+
+func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {
+	bs, err := os.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+	return NewConfig(bs, opts...)
+}
+
 // NewConfig initializes a config from yaml bytes.
 // NewConfig initializes all subtypes as well.
-func NewConfig(bs []byte) (*Config, error) {
+func NewConfig(bs []byte, opts ...ConfigOption) (*Config, error) {
 	var conf Config
+
+	for _, opt := range opts {
+		opt(&conf)
+	}
+
 	if err := yaml.Unmarshal(bs, &conf); err != nil {
 		return nil, err
 	}

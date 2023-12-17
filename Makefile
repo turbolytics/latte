@@ -1,6 +1,6 @@
 
 
 test-unit:
-	go test ./...
+	go test ./... -v
 
 .PHONY: test-unit

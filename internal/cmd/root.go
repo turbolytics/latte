@@ -13,7 +13,10 @@ func init() {
 		config.NewValidateCmd(),
 		config.NewInvokeCmd(),
 	)
-	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(
+		configCmd,
+		NewRunCmd(),
+	)
 }
 
 var rootCmd = &cobra.Command{

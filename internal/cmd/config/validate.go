@@ -15,7 +15,10 @@ func NewValidateCmd() *cobra.Command {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(configPath)
-			_, err := internal.NewConfigFromFile(configPath)
+			_, err := internal.NewConfigFromFile(
+				configPath,
+				internal.WithJustValidation(true),
+			)
 			if err != nil {
 				panic(err)
 			}

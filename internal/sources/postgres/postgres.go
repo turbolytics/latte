@@ -85,19 +85,23 @@ func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	return ms, err
 }
 
-func NewFromGenericConfig(m map[string]any) (*Postgres, error) {
+func NewFromGenericConfig(m map[string]any, validate bool) (*Postgres, error) {
 	var conf config
 	if err := mapstructure.Decode(m, &conf); err != nil {
 		return nil, err
 	}
 
-	db, err := sql.Open("postgres", conf.URI)
-	if err != nil {
-		return nil, err
-	}
+	var db *sql.DB
+	var err error
+	if !validate {
+		db, err = sql.Open("postgres", conf.URI)
+		if err != nil {
+			return nil, err
+		}
 
-	if err := db.Ping(); err != nil {
-		return nil, err
+		if err := db.Ping(); err != nil {
+			return nil, err
+		}
 	}
 
 	return &Postgres{

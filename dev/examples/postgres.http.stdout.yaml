@@ -1,11 +1,11 @@
-name: daily_signups
+name: daily_signups_1s
 
 metric:
   name: core.users.signups.total
   type: COUNT
 
 schedule:
-  interval: 24h
+  interval: 1s
 
 source:
   type: postgres
