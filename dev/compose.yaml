@@ -12,6 +12,14 @@ services:
     volumes:
       - ./postgres/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0-ubi8
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=test
+      - MONGO_INITDB_ROOT_PASSWORD=test
+    volumes:
+      - ./mongo/init-db.js:/docker-entrypoint-initdb.d/init-db.js
+
   vector:
     image: timberio/vector:0.34.1-debian
     ports:

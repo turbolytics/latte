@@ -1,0 +1,43 @@
+name: daily_signups_5s
+
+metric:
+  name: core.users.signups.total
+  type: COUNT
+
+schedule:
+  interval: 5s
+
+source:
+  type: postgres
+  config:
+    uri: 'postgresql://test:test@127.0.0.1:5432/test?sslmode=disable'
+    agg: |
+      [
+        { 
+          "$match": { 
+            "signup_time": {
+              "$gte": "cel(now() - duration(24h))" 
+            }
+          }
+        }, 
+        { 
+          "$group": { "_id": "$account", "value": { "$count": {} } } 
+        },
+        { 
+          "$addFields": { 
+            "account": {  "$toString": "$_id" } 
+          } 
+        }, 
+        { 
+          "$project": { "_id": 0 }
+        }
+      ]
+
+sinks:
+  console:
+    type: console
+
+  vector:
+    type: http
+    config:
+      uri: "http://127.0.0.1:9999/metrics"
