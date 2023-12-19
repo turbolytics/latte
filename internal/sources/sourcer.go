@@ -9,6 +9,7 @@ type Type string
 
 const (
 	TypePostgres Type = "postgres"
+	TypeMongoDB  Type = "mongodb"
 )
 
 type Sourcer interface {

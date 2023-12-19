@@ -1,11 +1,13 @@
 package internal
 
 import (
+	"context"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
 	"github.com/turbolytics/collector/internal/sinks/http"
 	"github.com/turbolytics/collector/internal/sources"
+	"github.com/turbolytics/collector/internal/sources/mongodb"
 	"github.com/turbolytics/collector/internal/sources/postgres"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -66,6 +68,12 @@ func initSource(c *Config) error {
 	switch c.Source.Type {
 	case sources.TypePostgres:
 		s, err = postgres.NewFromGenericConfig(
+			c.Source.Config,
+			c.validate,
+		)
+	case sources.TypeMongoDB:
+		s, err = mongodb.NewFromGenericConfig(
+			context.TODO(),
 			c.Source.Config,
 			c.validate,
 		)

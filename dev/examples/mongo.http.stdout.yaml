@@ -1,0 +1,38 @@
+name: daily_signups_5s
+
+metric:
+  name: core.users.signups.total
+  type: COUNT
+
+schedule:
+  interval: 5s
+
+source:
+  type: mongodb
+  config:
+    uri: 'mongodb://test:test@127.0.0.1:27017/test?authSource=admin'
+    database: test
+    collection: users
+    agg: |
+      [
+        { 
+          "$group": { "_id": "$account", "value": { "$count": {} } } 
+        },
+        { 
+          "$addFields": { 
+            "account": {  "$toString": "$_id" } 
+          } 
+        }, 
+        { 
+          "$project": { "_id": 0 }
+        }
+      ]
+
+sinks:
+  console:
+    type: console
+
+  vector:
+    type: http
+    config:
+      uri: "http://127.0.0.1:9999/metrics"
