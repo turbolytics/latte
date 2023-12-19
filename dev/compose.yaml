@@ -17,6 +17,8 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=test
       - MONGO_INITDB_ROOT_PASSWORD=test
+    ports:
+      - "27017:27017"
     volumes:
       - ./mongo/init-db.js:/docker-entrypoint-initdb.d/init-db.js
 

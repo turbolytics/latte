@@ -8,18 +8,13 @@ schedule:
   interval: 5s
 
 source:
-  type: postgres
+  type: mongodb
   config:
-    uri: 'postgresql://test:test@127.0.0.1:5432/test?sslmode=disable'
+    uri: 'mongodb://test:test@127.0.0.1:27017/test?authSource=admin'
+    database: test
+    collection: users
     agg: |
       [
-        { 
-          "$match": { 
-            "signup_time": {
-              "$gte": "cel(now() - duration(24h))" 
-            }
-          }
-        }, 
         { 
           "$group": { "_id": "$account", "value": { "$count": {} } } 
         },

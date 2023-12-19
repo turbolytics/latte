@@ -22,6 +22,8 @@ func NewValidateCmd() *cobra.Command {
 			if err != nil {
 				panic(err)
 			}
+
+			fmt.Println("VALID=true")
 		},
 	}
 

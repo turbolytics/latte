@@ -81,7 +81,6 @@ func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
 		results = append(results, data)
 	}
 	ms, err := resultsToMetrics(results)
-
 	return ms, err
 }
 

@@ -1,24 +1,26 @@
-package postgres
+package mongodb
 
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/turbolytics/collector/internal/metrics"
+	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 )
 
 func Test_resultsToMetrics_MissingValue(t *testing.T) {
-	rs := []map[string]any{
+	rs := []bson.M{
 		{
-			"key1": "value1",
+			"account": "google",
 		},
 	}
 
 	_, err := resultsToMetrics(rs)
 	assert.EqualError(t, err, "each row must contain a \"value\" key")
+
 }
 
 func Test_resultsToMetrics_SingleMetric(t *testing.T) {
-	rs := []map[string]any{
+	rs := []bson.M{
 		{
 			"key1":  "value1",
 			"value": 2,
