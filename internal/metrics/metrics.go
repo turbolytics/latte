@@ -1,6 +1,9 @@
 package metrics
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type Type string
 
@@ -17,6 +20,7 @@ type Metric struct {
 	Value float64           `json:"value"`
 	Type  Type              `json:"type"`
 	Tags  map[string]string `json:"tags"`
+	Time  time.Time         `json:"time"`
 }
 
 func WithUUID(id string) MetricOption {
@@ -29,6 +33,7 @@ func New(opts ...MetricOption) Metric {
 	m := Metric{
 		UUID: uuid.New().String(),
 		Tags: make(map[string]string),
+		Time: time.Now().UTC(),
 	}
 	for _, opt := range opts {
 		opt(&m)
