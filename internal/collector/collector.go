@@ -30,14 +30,16 @@ func (c *Collector) Source(ctx context.Context) ([]*metrics.Metric, error) {
 
 func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 	// need to add a serializer
-	bs, err := json.Marshal(metrics)
-	if err != nil {
-		return err
-	}
-	for _, s := range c.Config.Sinks {
-		_, err := s.Sinker.Write(bs)
+	for _, metric := range metrics {
+		bs, err := json.Marshal(metric)
 		if err != nil {
 			return err
+		}
+		for _, s := range c.Config.Sinks {
+			_, err := s.Sinker.Write(bs)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

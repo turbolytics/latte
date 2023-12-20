@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/turbolytics/collector/internal/metrics"
 	"testing"
+	"time"
 )
 
 func Test_resultsToMetrics_MissingValue(t *testing.T) {
@@ -32,6 +33,7 @@ func Test_resultsToMetrics_SingleMetric(t *testing.T) {
 	// output...
 	for _, m := range ms {
 		m.UUID = ""
+		m.Time = time.Time{}
 	}
 	assert.Equal(t, []*metrics.Metric{
 		{

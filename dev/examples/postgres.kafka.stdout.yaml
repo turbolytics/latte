@@ -25,3 +25,11 @@ source:
 sinks:
   console:
     type: console
+
+  kafka:
+    type: kafka
+    config:
+      brokers:
+        - localhost:9092
+      topic: signals
+      allow_auto_topic_creation: true

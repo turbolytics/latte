@@ -5,6 +5,7 @@ import (
 	"github.com/turbolytics/collector/internal/metrics"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
+	"time"
 )
 
 func Test_resultsToMetrics_MissingValue(t *testing.T) {
@@ -34,6 +35,7 @@ func Test_resultsToMetrics_SingleMetric(t *testing.T) {
 	// output...
 	for _, m := range ms {
 		m.UUID = ""
+		m.Time = time.Time{}
 	}
 	assert.Equal(t, []*metrics.Metric{
 		{
