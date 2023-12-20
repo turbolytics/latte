@@ -17,6 +17,10 @@ type Kafka struct {
 	writer *kafka.Writer
 }
 
+func (k *Kafka) Close() error {
+	return k.writer.Close()
+}
+
 func (k *Kafka) Write(bs []byte) (int, error) {
 	err := k.writer.WriteMessages(context.TODO(),
 		kafka.Message{
