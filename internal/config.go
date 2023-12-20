@@ -6,6 +6,7 @@ import (
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
 	"github.com/turbolytics/collector/internal/sinks/http"
+	"github.com/turbolytics/collector/internal/sinks/kafka"
 	"github.com/turbolytics/collector/internal/sources"
 	"github.com/turbolytics/collector/internal/sources/mongodb"
 	"github.com/turbolytics/collector/internal/sources/postgres"
@@ -93,6 +94,13 @@ func initSinks(c *Config) error {
 		switch v.Type {
 		case sinks.TypeConsole:
 			sink, err := console.NewFromGenericConfig(v.Config)
+			if err != nil {
+				return err
+			}
+			v.Sinker = sink
+			c.Sinks[k] = v
+		case sinks.TypeKafka:
+			sink, err := kafka.NewFromGenericConfig(v.Config)
 			if err != nil {
 				return err
 			}

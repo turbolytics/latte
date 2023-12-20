@@ -5,6 +5,7 @@ type Type string
 const (
 	TypeConsole Type = "console"
 	TypeHTTP    Type = "http"
+	TypeKafka   Type = "kafka"
 )
 
 // Sinker is responsible for sinking

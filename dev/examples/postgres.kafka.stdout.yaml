@@ -1,0 +1,35 @@
+name: daily_signups_60s
+
+metric:
+  name: core.users.signups.total
+  type: COUNT
+
+schedule:
+  interval: 60s
+
+source:
+  type: postgres
+  config:
+    uri: 'postgresql://test:test@127.0.0.1:5432/test?sslmode=disable'
+    sql: |
+      SELECT 
+        account as customer,
+        COUNT(*) as value
+      FROM 
+        users
+      WHERE 
+        users.signup_time >= NOW() - INTERVAL '1 DAY'
+      GROUP BY
+        account
+      
+sinks:
+  console:
+    type: console
+
+  kafka:
+    type: kafka
+    config:
+      brokers:
+        - localhost:9092
+      topic: signals
+      allow_auto_topic_creation: true
