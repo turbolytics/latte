@@ -15,6 +15,10 @@ type HTTP struct {
 	config config
 }
 
+func (h *HTTP) Close() error {
+	return nil
+}
+
 func (h *HTTP) Write(bs []byte) (int, error) {
 	buf := bytes.NewBuffer(bs)
 	resp, err := http.Post(h.config.URI, "application/x-www-form-urlencoded", buf)

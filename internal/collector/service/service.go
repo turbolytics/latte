@@ -15,7 +15,12 @@ type Service struct {
 
 func (s *Service) Shutdown() {
 	s.logger.Info("shutdown")
-	s.scheduler.Shutdown()
+	defer s.scheduler.Shutdown()
+	// close each collector
+	for _, coll := range s.collectors {
+		coll.Close()
+	}
+
 }
 
 func (s *Service) Run(ctx context.Context) error {

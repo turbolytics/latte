@@ -14,6 +14,13 @@ type Collector struct {
 	Config *internal.Config
 }
 
+func (c *Collector) Close() error {
+	for _, s := range c.Config.Sinks {
+		s.Sinker.Close()
+	}
+	return nil
+}
+
 func (c *Collector) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	ms, err := c.Config.Source.Sourcer.Source(ctx)
 	if err != nil {
