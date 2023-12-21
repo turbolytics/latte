@@ -1,4 +1,4 @@
-name: daily_signups_10s
+name: mongo.users.signups_10s
 
 metric:
   name: core.users.signups.total
