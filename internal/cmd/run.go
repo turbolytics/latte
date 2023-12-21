@@ -6,7 +6,10 @@ import (
 	"github.com/turbolytics/collector/internal"
 	"github.com/turbolytics/collector/internal/collector"
 	"github.com/turbolytics/collector/internal/collector/service"
+	"github.com/turbolytics/collector/internal/obs"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+	"log"
 )
 
 func NewRunCmd() *cobra.Command {
@@ -17,6 +20,29 @@ func NewRunCmd() *cobra.Command {
 		Short: "Run collector daemon",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Create resource.
+			res, err := obs.NewResource()
+			if err != nil {
+				panic(err)
+			}
+
+			// Create a meter provider.
+			// You can pass this instance directly to your instrumented code if it
+			// accepts a MeterProvider instance.
+			meterProvider, err := obs.NewMeterProvider(res)
+			if err != nil {
+				panic(err)
+			}
+
+			// Handle shutdown properly so nothing leaks.
+			defer func() {
+				if err := meterProvider.Shutdown(context.Background()); err != nil {
+					log.Println(err)
+				}
+			}()
+
+			otel.SetMeterProvider(meterProvider)
+
 			logger, _ := zap.NewProduction()
 			defer logger.Sync() // flushes buffer, if any
 
