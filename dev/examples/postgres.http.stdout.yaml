@@ -1,7 +1,7 @@
-name: daily_signups_30s
+name: postgres.users.daily.signups.30s
 
 metric:
-  name: core.users.signups.total
+  name: core.users.signups.daily.total
   type: COUNT
 
 schedule:

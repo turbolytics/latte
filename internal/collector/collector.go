@@ -6,8 +6,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/turbolytics/collector/internal"
 	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/collector/internal/obs"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"time"
 )
+
+var meter = otel.Meter("signals-collector")
 
 type Collector struct {
 	logger *zap.Logger
@@ -21,8 +28,39 @@ func (c *Collector) Close() error {
 	return nil
 }
 
-func (c *Collector) Source(ctx context.Context) ([]*metrics.Metric, error) {
-	ms, err := c.Config.Source.Sourcer.Source(ctx)
+func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error) {
+	start := time.Now()
+
+	histogram, _ := meter.Float64Histogram(
+		"collector.source.duration",
+		metric.WithUnit("s"),
+	)
+
+	defer func() {
+		duration := time.Since(start)
+
+		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
+			attribute.NewSet(
+				attribute.String("result.status_code", obs.ErrToStatus(err)),
+				attribute.String("source.type", string(c.Config.Source.Type)),
+			),
+		))
+
+		meter.Int64ObservableGauge(
+			"collector.source.metrics.total",
+			metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+				o.Observe(int64(len(ms)), metric.WithAttributeSet(
+					attribute.NewSet(
+						attribute.String("source.type", string(c.Config.Source.Type)),
+					),
+				))
+				return nil
+			}),
+		)
+
+	}()
+
+	ms, err = c.Config.Source.Sourcer.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,17 +74,35 @@ func (c *Collector) Source(ctx context.Context) ([]*metrics.Metric, error) {
 }
 
 func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
+
+	histogram, _ := meter.Float64Histogram(
+		"collector.sink.duration",
+		metric.WithUnit("s"),
+	)
+
 	// need to add a serializer
-	for _, metric := range metrics {
-		bs, err := json.Marshal(metric)
+	for _, m := range metrics {
+		bs, err := json.Marshal(m)
 		if err != nil {
 			return err
 		}
 		for _, s := range c.Config.Sinks {
+			start := time.Now()
+
 			_, err := s.Sinker.Write(bs)
+
+			duration := time.Since(start)
+			histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
+				attribute.NewSet(
+					attribute.String("result.status_code", obs.ErrToStatus(err)),
+					attribute.String("sink.name", string(s.Type)),
+				),
+			))
+
 			if err != nil {
 				return err
 			}
+
 		}
 	}
 	return nil
@@ -61,7 +117,36 @@ func (c *Collector) InvokeHandleError(ctx context.Context) {
 	}
 }
 
-func (c *Collector) Invoke(ctx context.Context) ([]*metrics.Metric, error) {
+func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
+	start := time.Now()
+
+	histogram, _ := meter.Float64Histogram(
+		"collector.invoke.duration",
+		metric.WithUnit("s"),
+	)
+
+	counter, _ := meter.Int64Counter(
+		"collector.invoke.count",
+	)
+
+	defer func() {
+		duration := time.Since(start)
+
+		counter.Add(ctx, 1, metric.WithAttributeSet(
+			attribute.NewSet(
+				attribute.String("result.status_code", obs.ErrToStatus(err)),
+				attribute.String("collector.name", c.Config.Name),
+			),
+		))
+
+		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
+			attribute.NewSet(
+				attribute.String("result.status_code", obs.ErrToStatus(err)),
+				attribute.String("collector.name", c.Config.Name),
+			),
+		))
+	}()
+
 	id := uuid.New()
 	c.logger.Info(
 		"collector.Invoke",
@@ -69,7 +154,7 @@ func (c *Collector) Invoke(ctx context.Context) ([]*metrics.Metric, error) {
 		zap.String("name", c.Config.Name),
 	)
 	ctx = context.WithValue(ctx, "id", id)
-	ms, err := c.Source(ctx)
+	ms, err = c.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +170,7 @@ func (c *Collector) Invoke(ctx context.Context) ([]*metrics.Metric, error) {
 			zap.String("name", c.Config.Name),
 		)
 	}
+
 	return ms, err
 }
 
