@@ -1,7 +1,7 @@
 # signals-collector
 Collect metrics from a variety of operational sources
 
-<img width="885" alt="Screenshot 2023-12-23 at 7 30 44 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/b6d83ae3-a15f-4289-82a8-a981ffed66a2">
+<img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/15641829-7be3-4e73-b4b7-d7a9f1cc3f9b">
 
 
 ## Project Goals
