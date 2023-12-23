@@ -13,15 +13,15 @@ Signals collector produces analytic telemetry, allowing business analytics and b
 
 Signals Collector takes a different approach to data analytics when compared to tools such as [fivetran](https://www.fivetran.com/) and [airbyte](https://airbyte.com/). These tools focus on copying operational data sources for downstream analysis:
 
-![image](https://github.com/turbolytics/signals-collector/assets/151242797/d17f07ef-5744-4210-a652-f836ceb399df)
+<img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/d17f07ef-5744-4210-a652-f836ceb399df">
 
 These tools create a 1:1 copy of the operational product data in the datalake or datawarehouse. Once in a datalake or datawarehouse the operational data requires layers and layers of processing to distill insights:
 
-![image](https://github.com/turbolytics/signals-collector/assets/151242797/1b3df140-df6d-4d71-a47a-f36e38986a20)
+<img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/1b3df140-df6d-4d71-a47a-f36e38986a20">
 
 The operational data is often at a very fine grain, individual user product transactions. Data tools are used to slowly refine and aggregate the data into a coarse grain consumable by humans. This refinement is extremely time-consuming and flaky:
 
-![image](https://github.com/turbolytics/signals-collector/assets/151242797/08185885-10fa-4c3f-8df7-fa29678fb5f2)
+<img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/08185885-10fa-4c3f-8df7-fa29678fb5f2">
 
 Some use cases such as data exploration and machine learning do benefit from large sets of operational data, but business analytics often doesn't. The layered warehouse approach is testament to this. The final layer of data is aggregated (often to the day) and very small compared to the fine-grained large source data.
 
