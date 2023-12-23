@@ -7,6 +7,7 @@ import (
 	"github.com/turbolytics/collector/internal/collector"
 	"github.com/turbolytics/collector/internal/collector/service"
 	"github.com/turbolytics/collector/internal/obs"
+	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"log"
@@ -42,6 +43,8 @@ func NewRunCmd() *cobra.Command {
 			}()
 
 			otel.SetMeterProvider(meterProvider)
+
+			go otelruntime.Start(otelruntime.WithMeterProvider(meterProvider))
 
 			logger, _ := zap.NewProduction()
 			defer logger.Sync() // flushes buffer, if any
