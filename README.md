@@ -23,7 +23,7 @@ The operational data is often at a very fine grain, individual user product tran
 
 <img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/08185885-10fa-4c3f-8df7-fa29678fb5f2">
 
-Some use cases such as data exploration and machine learning do benefit from large sets of operational data, but business analytics often doesn't. The layered warehouse approach is testament to this. The final layer of data is aggregated (often to the day) and very small compared to the fine-grained large source data.
+Some use cases such as data exploration and machine learning do benefit from large sets of operational data, but business analytics often doesn't. The layered warehouse approach is testament to this. The final layer of data is aggregated (often to the day) and very small compared to the fine-grained large source data. The modern data stack encourages egressing of huge amounts of operational data, only to aggregate that data over a series of stages into a coarse grained aggregate data set!!!
 
 https://on-systems.tech/blog/135-draining-the-data-swamp/
 
