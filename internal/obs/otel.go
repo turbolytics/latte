@@ -32,7 +32,7 @@ func NewMeterProvider(res *resource.Resource) (*metric.MeterProvider, error) {
 		metric.WithResource(res),
 		metric.WithReader(metric.NewPeriodicReader(metricExporter,
 			// Default is 1m. Set to 3s for demonstrative purposes.
-			metric.WithInterval(3*time.Second))),
+			metric.WithInterval(60*time.Second))),
 	)
 	return meterProvider, nil
 }
