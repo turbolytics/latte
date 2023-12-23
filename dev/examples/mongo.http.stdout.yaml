@@ -3,6 +3,9 @@ name: mongo.users.signups_10s
 metric:
   name: core.users.signups.total
   type: COUNT
+  tags:
+    - key: env
+      value: prod
 
 schedule:
   interval: 10s

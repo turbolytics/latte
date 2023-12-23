@@ -3,6 +3,9 @@ name: postgres.users.daily.signups.30s
 metric:
   name: core.users.signups.daily.total
   type: COUNT
+  tags:
+    - key: env
+      value: prod
 
 schedule:
   interval: 30s

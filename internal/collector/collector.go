@@ -28,6 +28,20 @@ func (c *Collector) Close() error {
 	return nil
 }
 
+func (c *Collector) Transform(ms []*metrics.Metric) error {
+	for _, m := range ms {
+		m.Name = c.Config.Metric.Name
+		m.Type = c.Config.Metric.Type
+
+		// enrich with tags
+		// should these be copied?
+		for _, t := range c.Config.Metric.Tags {
+			m.Tags[t.Key] = t.Value
+		}
+	}
+	return nil
+}
+
 func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error) {
 	start := time.Now()
 
@@ -65,11 +79,6 @@ func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error
 		return nil, err
 	}
 
-	for _, m := range ms {
-		m.Name = c.Config.Metric.Name
-		m.Type = c.Config.Metric.Type
-	}
-
 	return ms, nil
 }
 
@@ -79,6 +88,7 @@ func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 		"collector.sink.duration",
 		metric.WithUnit("s"),
 	)
+	// add tags from config
 
 	// need to add a serializer
 	for _, m := range metrics {
@@ -160,15 +170,22 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 	}
 
 	// only sink if metrics are present:
-	if len(ms) > 0 {
-		err = c.Sink(ctx, ms)
-	} else {
+	if len(ms) == 0 {
 		c.logger.Warn(
 			"collector.Invoke",
 			zap.String("msg", "no metrics found"),
 			zap.String("id", id.String()),
 			zap.String("name", c.Config.Name),
 		)
+		return ms, err
+	}
+
+	if err = c.Transform(ms); err != nil {
+		return ms, err
+	}
+
+	if err = c.Sink(ctx, ms); err != nil {
+		return ms, err
 	}
 
 	return ms, err
