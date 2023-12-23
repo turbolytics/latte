@@ -1,7 +1,7 @@
-name: postgres.users.daily.signups.60s
+name: postgres.users.total.60s
 
 metric:
-  name: core.users.signups.daily.total
+  name: core.users.total
   type: COUNT
   tags:
     - key: env
@@ -20,8 +20,6 @@ source:
         COUNT(*) as value
       FROM 
         users
-      WHERE 
-        users.signup_time >= NOW() - INTERVAL '1 DAY'
       GROUP BY
         account
       
