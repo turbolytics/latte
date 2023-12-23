@@ -1,7 +1,7 @@
-name: mongo.users.signups_10s
+name: mongo.users.10s
 
 metric:
-  name: core.users.signups.total
+  name: core.users.total
   type: COUNT
   tags:
     - key: env
