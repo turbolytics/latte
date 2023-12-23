@@ -16,9 +16,15 @@ import (
 	"time"
 )
 
+type Tag struct {
+	Key   string
+	Value string
+}
+
 type Metric struct {
 	Name string
 	Type metrics.Type
+	Tags []Tag
 }
 
 type Schedule struct {
