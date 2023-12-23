@@ -1,6 +1,19 @@
 # signals-collector
 Collect metrics from a variety of operational sources
 
+<img width="885" alt="Screenshot 2023-12-23 at 7 30 44 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/b6d83ae3-a15f-4289-82a8-a981ffed66a2">
+
+
+## Project Goals
+- High fidelity data collection, using the minimum data necessary
+- Fidelity is focused informative signals and not raw data
+- Aggregate data collection over raw data
+
+## Approach
+## Getting Started / Quickstart
+## Examples
+
+
 ## Dev
 
 - Start Postgres & Vector
