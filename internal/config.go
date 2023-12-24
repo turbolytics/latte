@@ -5,6 +5,7 @@ import (
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
+	"github.com/turbolytics/collector/internal/sinks/file"
 	"github.com/turbolytics/collector/internal/sinks/http"
 	"github.com/turbolytics/collector/internal/sinks/kafka"
 	"github.com/turbolytics/collector/internal/sources"
@@ -114,6 +115,16 @@ func initSinks(c *Config) error {
 			c.Sinks[k] = v
 		case sinks.TypeHTTP:
 			sink, err := http.NewFromGenericConfig(v.Config)
+			if err != nil {
+				return err
+			}
+			v.Sinker = sink
+			c.Sinks[k] = v
+		case sinks.TypeFile:
+			sink, err := file.NewFromGenericConfig(
+				v.Config,
+				c.validate,
+			)
 			if err != nil {
 				return err
 			}
