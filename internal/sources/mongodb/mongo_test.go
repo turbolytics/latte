@@ -35,7 +35,7 @@ func Test_resultsToMetrics_SingleMetric(t *testing.T) {
 	// output...
 	for _, m := range ms {
 		m.UUID = ""
-		m.Time = time.Time{}
+		m.Timestamp = time.Time{}
 	}
 	assert.Equal(t, []*metrics.Metric{
 		{

@@ -11,6 +11,54 @@ Signals collector produces analytic telemetry, allowing business analytics and b
 
 <img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/15641829-7be3-4e73-b4b7-d7a9f1cc3f9b">
 
+Signals Collector is a new class of tooling for Extract Transform and Aggregation (ETA). Signals collector aggregates data at the source and only emits the aggregations for downstream processing in the datalake or datawarehouse:
+
+<img width="600" alt="Screenshot 2023-12-24 at 9 02 52 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/f32cf84c-e05f-4a59-8040-8f3cc74b04a6">
+
+Consider a users table with hundreds of thousands or millions of users:
+
+```
+CREATE TABLE users (
+    account varchar,
+    signup_time timestamp
+);
+```
+
+Signals collector aggregates data at the source and only emits the aggregated data, at the grain consumed by end users. Imagine the users has 2 customers, amazon and google, with 1MM users:
+
+
+Signals collector can aggregate user counts at the source:
+
+<img width="911" alt="Screenshot 2023-12-24 at 9 05 22 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/80a59dcc-4f5e-4dd3-95bb-b9402cb3e6e7">
+
+
+This will produce 2 data points per day, reducing the need to egress millions of users to a datalake or data warehouse:
+
+```
+{
+  "uuid": "4fdbc492-7e76-4ae7-9e32-82da7463f374",
+  "name": "core.users.total",
+  "value": 750000,
+  "type": "COUNT",
+  "tags": {
+    "customer": "google"
+  },
+  "timestamp": "2023-12-24T14:12:01.237538Z",
+  "grain_datetime": "2023-12-24T00:00:00Z"
+}
+{
+  "uuid": "cdc14916-15a4-4579-aa06-2dc65f442aba",
+  "name": "core.users.total",
+  "value": 250000,
+  "type": "COUNT",
+  "tags": {
+    "customer": "amazon"
+  },
+  "timestamp": "2023-12-24T14:12:01.237543Z",
+  "grain_datetime": "2023-12-24T00:00:00Z"
+}
+```
+
 Signals Collector takes a different approach to data analytics when compared to tools such as [fivetran](https://www.fivetran.com/) and [airbyte](https://airbyte.com/). These tools focus on copying operational data sources for downstream analysis:
 
 <img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/d17f07ef-5744-4210-a652-f836ceb399df">
@@ -30,7 +78,7 @@ https://on-systems.tech/blog/135-draining-the-data-swamp/
 Signals Collector enables aggregating analytic data at the source and only emit the data that is necessary for analytics at the grain necessary. Aggregating at the source has a number of benefits including:
 
 - Reduce cost of analytic data calculation, storage and query.
-- Increase datawarehouse data fidelity.
+- Increase data warehouse data fidelity.
 - Reduce data lake sprawl.
 - Reduce data transfer into and costs of querying datalakes and datawarehouses.
 - Enable product engineers to write self service analytics built on their operational data stores.
@@ -49,7 +97,7 @@ Signals Collector aims to:
 
 ## Dev
 
-- Start Postgres & Vector
+- Start docker dependencies
 ```
 docker-compose -f dev/compose.yaml up -d
 ```
@@ -58,13 +106,37 @@ docker-compose -f dev/compose.yaml up -d
 
 - Invoke collector
 ```
-go run cmd/main.go config invoke --config=/Users/danielmican/code/github.com/turbolytics/signals-collector/dev/examples/postgres.http.stdout.yaml
+go run cmd/main.go config invoke --config=/Users/danielmican/code/github.com/turbolytics/signals-collector/dev/examples/postgres.kafka.stdout.yaml
 ```
 
-- Verify Vector output
+- Verify Kafka Output 
 ```
-{"name":"core.users.signups.total","path":"/metrics","source_type":"http_server","tags":{"customer":"google"},"timestamp":"2023-12-12T13:33:27.564680676Z","type":"COUNT","value":3}
-{"name":"core.users.signups.total","path":"/metrics","source_type":"http_server","tags":{"customer":"amazon"},"timestamp":"2023-12-12T13:33:27.564680676Z","type":"COUNT","value":2}
+docker exec -it kafka1 kafka-console-consumer --bootstrap-server=localhost:9092 --topic=signals --from-beginning | jq .
+```
+
+```javascript
+{
+  "uuid": "4fdbc492-7e76-4ae7-9e32-82da7463f374",
+  "name": "core.users.total",
+  "value": 3,
+  "type": "COUNT",
+  "tags": {
+    "customer": "google"
+  },
+  "timestamp": "2023-12-24T14:12:01.237538Z",
+  "grain_datetime": "2023-12-24T00:00:00Z"
+}
+{
+  "uuid": "cdc14916-15a4-4579-aa06-2dc65f442aba",
+  "name": "core.users.total",
+  "value": 2,
+  "type": "COUNT",
+  "tags": {
+    "customer": "amazon"
+  },
+  "timestamp": "2023-12-24T14:12:01.237543Z",
+  "grain_datetime": "2023-12-24T00:00:00Z"
+}
 ```
 
 ## Concepts

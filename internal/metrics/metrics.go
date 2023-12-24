@@ -15,12 +15,13 @@ const (
 type MetricOption func(metric *Metric)
 
 type Metric struct {
-	UUID  string            `json:"uuid"`
-	Name  string            `json:"name"`
-	Value float64           `json:"value"`
-	Type  Type              `json:"type"`
-	Tags  map[string]string `json:"tags"`
-	Time  time.Time         `json:"time"`
+	UUID          string            `json:"uuid"`
+	Name          string            `json:"name"`
+	Value         float64           `json:"value"`
+	Type          Type              `json:"type"`
+	Tags          map[string]string `json:"tags"`
+	Timestamp     time.Time         `json:"timestamp"`
+	GrainDatetime time.Time         `json:"grain_datetime"`
 }
 
 func WithUUID(id string) MetricOption {
@@ -31,9 +32,9 @@ func WithUUID(id string) MetricOption {
 
 func New(opts ...MetricOption) Metric {
 	m := Metric{
-		UUID: uuid.New().String(),
-		Tags: make(map[string]string),
-		Time: time.Now().UTC(),
+		UUID:      uuid.New().String(),
+		Tags:      make(map[string]string),
+		Timestamp: time.Now().UTC(),
 	}
 	for _, opt := range opts {
 		opt(&m)

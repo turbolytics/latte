@@ -28,22 +28,26 @@ func (c *Collector) Close() error {
 	return nil
 }
 
-func (c *Collector) Transform(ms []*metrics.Metric) error {
+func (c *Collector) Transform(t time.Time, ms []*metrics.Metric) error {
+	grainDatetime := t.Truncate(c.Config.Schedule.Interval)
+
 	for _, m := range ms {
 		m.Name = c.Config.Metric.Name
 		m.Type = c.Config.Metric.Type
+		m.GrainDatetime = grainDatetime
 
 		// enrich with tags
 		// should these be copied?
 		for _, t := range c.Config.Metric.Tags {
 			m.Tags[t.Key] = t.Value
 		}
+
 	}
 	return nil
 }
 
 func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error) {
-	start := time.Now()
+	start := time.Now().UTC()
 
 	histogram, _ := meter.Float64Histogram(
 		"collector.source.duration",
@@ -97,7 +101,7 @@ func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 			return err
 		}
 		for _, s := range c.Config.Sinks {
-			start := time.Now()
+			start := time.Now().UTC()
 
 			_, err := s.Sinker.Write(bs)
 
@@ -128,7 +132,7 @@ func (c *Collector) InvokeHandleError(ctx context.Context) {
 }
 
 func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
-	start := time.Now()
+	start := time.Now().UTC()
 
 	histogram, _ := meter.Float64Histogram(
 		"collector.invoke.duration",
@@ -180,7 +184,7 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 		return ms, err
 	}
 
-	if err = c.Transform(ms); err != nil {
+	if err = c.Transform(start, ms); err != nil {
 		return ms, err
 	}
 

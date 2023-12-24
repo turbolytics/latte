@@ -1,4 +1,4 @@
-name: postgres.users.total.60s
+name: postgres.users.total.24h
 
 metric:
   name: core.users.total
@@ -8,7 +8,7 @@ metric:
       value: prod
 
 schedule:
-  interval: 60s
+  interval: 24h
 
 source:
   type: postgres
