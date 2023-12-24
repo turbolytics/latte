@@ -75,7 +75,11 @@ Some use cases such as data exploration and machine learning do benefit from lar
 
 https://on-systems.tech/blog/135-draining-the-data-swamp/
 
-Signals Collector enables aggregating analytic data at the source and only emit the data that is necessary for analytics at the grain necessary. Aggregating at the source has a number of benefits including:
+Signals Collector enables aggregating analytic data at the source and only emit the data that is necessary for analytics at the grain necessary. 
+
+## Project Goals
+
+Signals Collector aims to:
 
 - Reduce cost of analytic data calculation, storage and query.
 - Increase data warehouse data fidelity.
@@ -83,19 +87,8 @@ Signals Collector enables aggregating analytic data at the source and only emit 
 - Reduce data transfer into and costs of querying datalakes and datawarehouses.
 - Enable product engineers to write self service analytics built on their operational data stores.
 
-## Project Goals
 
-Signals Collector aims to:
-
-- Enable high fidelity data collection, creating the minimum dataset necessary to produce insights.
-- Fidelity is focused informative signals and not raw data
-- Aggregate data collection over raw data
-
-## Approach
 ## Getting Started / Quickstart
-## Examples
-
-## Dev
 
 - Start docker dependencies
 ```
@@ -138,13 +131,19 @@ docker exec -it kafka1 kafka-console-consumer --bootstrap-server=localhost:9092 
   "grain_datetime": "2023-12-24T00:00:00Z"
 }
 ```
+## Examples
+
+### Example Configurations
+
+Checkout the [examples directory](./dev/examples) for configuration examples.
 
 ## Concepts
-- Collector Configuration
-- Source
-- Sink
-- Schedule
-- Metric
+### Collector Configuration
+
+### Source
+### Sink
+### Schedule
+### Metric
 
 ## Docker
 
