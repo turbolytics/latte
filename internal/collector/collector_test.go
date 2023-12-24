@@ -5,6 +5,7 @@ import (
 	"github.com/turbolytics/collector/internal"
 	"github.com/turbolytics/collector/internal/metrics"
 	"testing"
+	"time"
 )
 
 func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
@@ -22,9 +23,13 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 	ms := []*metrics.Metric{{
 		Tags: make(map[string]string),
 	}}
-	err = coll.Transform(ms)
+
+	gt := time.Now().UTC()
+	err = coll.Transform(gt, ms)
+
 	assert.NoError(t, err)
 	assert.Equal(t, []*metrics.Metric{{
+		GrainDatetime: gt,
 		Tags: map[string]string{
 			"key1": "val1",
 			"key2": "val2",
