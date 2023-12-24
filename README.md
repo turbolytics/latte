@@ -97,9 +97,14 @@ docker-compose -f dev/compose.yaml up -d
 
 ### Invoke Locally
 
+- Validate Configuration
+```
+go run cmd/main.go config validate --config=$(PWD)/dev/examples/postgres.kafka.stdout.yaml
+VALID=true
+```
 - Invoke collector
 ```
-go run cmd/main.go config invoke --config=/Users/danielmican/code/github.com/turbolytics/signals-collector/dev/examples/postgres.kafka.stdout.yaml
+go run cmd/main.go config invoke --config=$(PWD)/dev/examples/postgres.kafka.stdout.yaml
 ```
 
 - Verify Kafka Output 
@@ -151,3 +156,8 @@ Checkout the [examples directory](./dev/examples) for configuration examples.
 docker build -t signals/collector .
 docker run -v $(PWD)/dev:/tmp signals-collector config validate --config=/tmp/examples/postgres.http.stdout.yaml
 ```
+
+
+## Additional Documentation
+
+Additional documention is available in the [docs/ directory](./docs)
