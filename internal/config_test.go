@@ -22,6 +22,7 @@ func TestNewConfigFromFile(t *testing.T) {
 		{"postgres.stdout.yaml"},
 		{"mongo.http.stdout.yaml"},
 		{"postgres.kafka.stdout.yaml"},
+		{"postgres.fileaudit.stdout.yaml"},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.fileName, func(t *testing.T) {

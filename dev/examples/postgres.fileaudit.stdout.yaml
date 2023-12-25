@@ -1,0 +1,36 @@
+name: postgres.users.total.24h
+
+metric:
+  name: core.users.total
+  type: COUNT
+  tags:
+    - key: env
+      value: prod
+
+schedule:
+  interval: 24h
+
+source:
+  type: postgres
+  config:
+    uri: 'postgresql://test:test@127.0.0.1:5432/test?sslmode=disable'
+    sql: |
+      SELECT 
+        account as customer,
+        COUNT(*) as value
+      FROM 
+        users
+      GROUP BY
+        account
+      
+sinks:
+  console:
+    type: console
+
+  audit:
+    # audit log for data durability and redriving
+    # can be combined with linux logrotate tools:
+    # https://www.redhat.com/sysadmin/setting-logrotate
+    type: file
+    config:
+      path: /tmp/log/signals.audit.log

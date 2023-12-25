@@ -6,6 +6,7 @@ const (
 	TypeConsole Type = "console"
 	TypeHTTP    Type = "http"
 	TypeKafka   Type = "kafka"
+	TypeFile    Type = "file"
 )
 
 // Sinker is responsible for sinking
