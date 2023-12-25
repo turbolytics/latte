@@ -32,4 +32,5 @@ sinks:
     # can be combined with linux logrotate tools:
     # https://www.redhat.com/sysadmin/setting-logrotate
     type: file
-    path: /tmp/log/signals.audit.log
+    config:
+      path: /tmp/log/signals.audit.log

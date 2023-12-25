@@ -36,7 +36,7 @@ func NewFromGenericConfig(m map[string]any, validate bool) (*File, error) {
 	var f *os.File
 	var err error
 	if !validate {
-		f, err = os.Open(conf.Path)
+		f, err = os.OpenFile(conf.Path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
 			return nil, err
 		}
