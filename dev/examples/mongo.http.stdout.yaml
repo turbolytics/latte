@@ -13,7 +13,7 @@ schedule:
 source:
   type: mongodb
   config:
-    uri: 'mongodb://test:test@{{ getEnvOrDefault "SC_DB_HOST" "127.0.0.1" }}:27017/test?authSource=admin'
+    uri: 'mongodb://test:test@{{ getEnvOrDefault "SC_MONGO_HOST" "127.0.0.1" }}:27017/test?authSource=admin'
     database: test
     collection: users
     agg: |

@@ -88,14 +88,14 @@ Signals Collector aims to:
 - Enable product engineers to write self service analytics built on their operational data stores.
 
 
-## Getting Started / Quickstart
+## Getting Started 
+
+### Local Go Development
 
 - Start docker dependencies
 ```
 docker-compose -f dev/compose.yaml up -d
 ```
-
-### Invoke Locally
 
 - Validate Configuration
 ```
@@ -136,6 +136,9 @@ docker exec -it kafka1 kafka-console-consumer --bootstrap-server=localhost:9092 
   "grain_datetime": "2023-12-24T00:00:00Z"
 }
 ```
+
+### Local Docker 
+
 ## Examples
 
 ### Example Configurations
