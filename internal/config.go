@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
@@ -14,6 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"path"
+	"text/template"
 	"time"
 )
 
@@ -135,6 +137,33 @@ func initSinks(c *Config) error {
 	return nil
 }
 
+func parseTemplate(bs []byte) ([]byte, error) {
+	funcMap := template.FuncMap{
+		"getEnv": func(key string) string {
+			return os.Getenv(key)
+		},
+		"getEnvOrDefault": func(key string, d string) string {
+			envVal := os.Getenv(key)
+			if envVal == "" {
+				return d
+			}
+
+			return envVal
+		},
+	}
+	t, err := template.New("config").Funcs(funcMap).Parse(string(bs))
+	if err != nil {
+		return nil, err
+	}
+
+	var out bytes.Buffer
+	if err := t.Execute(&out, nil); err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), nil
+}
+
 func NewConfigsFromDir(dirname string) ([]*Config, error) {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
@@ -167,11 +196,16 @@ func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {
 
 // NewConfig initializes a config from yaml bytes.
 // NewConfig initializes all subtypes as well.
-func NewConfig(bs []byte, opts ...ConfigOption) (*Config, error) {
+func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 	var conf Config
 
 	for _, opt := range opts {
 		opt(&conf)
+	}
+
+	bs, err := parseTemplate(raw)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := yaml.Unmarshal(bs, &conf); err != nil {
