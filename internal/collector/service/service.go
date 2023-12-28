@@ -32,10 +32,21 @@ func (s *Service) Run(ctx context.Context) error {
 
 	for _, col := range s.collectors {
 		colCopy := col
+
+		var jd gocron.JobDefinition
+		if colCopy.Config.Schedule.Interval != nil {
+			jd = gocron.DurationJob(
+				*colCopy.Config.Schedule.Interval,
+			)
+		} else if colCopy.Config.Schedule.Cron != nil {
+			jd = gocron.CronJob(
+				*colCopy.Config.Schedule.Cron,
+				false,
+			)
+		}
+
 		_, err := s.scheduler.NewJob(
-			gocron.DurationJob(
-				colCopy.Config.Schedule.Interval,
-			),
+			jd,
 			gocron.NewTask(
 				func(ctx context.Context) {
 					colCopy.InvokeHandleError(ctx)

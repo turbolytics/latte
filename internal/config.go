@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
@@ -27,12 +28,15 @@ type Tag struct {
 type Metric struct {
 	Name string
 	Type metrics.Type
-	Tags []Tag
+	// Grain specifies the aggregation of this metric. It will be used to calculate the
+	// grain datetime.
+	Grain *time.Duration
+	Tags  []Tag
 }
 
 type Schedule struct {
-	Interval time.Duration
-	Cron     string
+	Interval *time.Duration
+	Cron     *string
 }
 
 type Collector struct {
@@ -194,6 +198,41 @@ func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {
 	return NewConfig(bs, opts...)
 }
 
+type validator func(Config) error
+
+func validateMetric(c Config) error {
+	if c.Schedule.Interval != nil && (c.Schedule.Interval != c.Metric.Grain) {
+		return fmt.Errorf("'schedule.interval' should match 'metric.grain'")
+	}
+	return nil
+}
+
+func validateSchedule(c Config) error {
+	if c.Schedule.Interval == nil && c.Schedule.Cron == nil {
+		return fmt.Errorf("must set schedule.interval or schedule.cron")
+	}
+
+	if c.Schedule.Interval != nil && c.Schedule.Cron != nil {
+		return fmt.Errorf("must set either schedule.interval or schedule.cron")
+	}
+
+	return nil
+}
+
+func validate(c Config) error {
+	validators := []validator{
+		validateSchedule,
+		validateMetric,
+	}
+
+	for _, vFn := range validators {
+		if err := vFn(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // NewConfig initializes a config from yaml bytes.
 // NewConfig initializes all subtypes as well.
 func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
@@ -209,6 +248,10 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 	}
 
 	if err := yaml.Unmarshal(bs, &conf); err != nil {
+		return nil, err
+	}
+
+	if err := validate(conf); err != nil {
 		return nil, err
 	}
 
