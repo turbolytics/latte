@@ -1,15 +1,15 @@
-name: postgres.users.total.24h
+name: postgres.users.total.1m
 
 metric:
   name: core.users.total
   type: COUNT
-  grain: 24h
+  grain: 1m
   tags:
     - key: env
       value: prod
 
 schedule:
-  cron: '0 1 * * *'
+  cron: '* * * * *'
 
 source:
   type: postgres
