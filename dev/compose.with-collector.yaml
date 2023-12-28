@@ -73,5 +73,8 @@ services:
     environment:
       SC_POSTGRES_HOST: postgres
       SC_MONGO_HOST: mongodb
+      SC_VECTOR_HOST: vector
+      SC_KAFKA_HOST: kafka1:19092
     volumes:
       - ./examples:/dev/config
+      - ./audit:/tmp/log/

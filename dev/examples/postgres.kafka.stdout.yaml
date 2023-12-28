@@ -28,6 +28,6 @@ sinks:
     type: kafka
     config:
       brokers:
-        - localhost:9092
+        - '{{ getEnvOrDefault "SC_KAFKA_HOST" "localhost:9092" }}'
       topic: signals
       allow_auto_topic_creation: true
