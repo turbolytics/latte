@@ -38,4 +38,4 @@ sinks:
   vector:
     type: http
     config:
-      uri: "http://127.0.0.1:9999/metrics"
+      uri: 'http://{{ getEnvOrDefault "SC_VECTOR_HOST" "127.0.0.1" }}:9999/metrics'

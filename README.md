@@ -139,6 +139,56 @@ docker exec -it kafka1 kafka-console-consumer --bootstrap-server=localhost:9092 
 
 ### Local Docker 
 
+- Start docker dependencies:
+```
+docker-compose -f dev/compose.with-collector.yaml up -d
+```
+
+- Validate config 
+```
+docker-compose -f dev/compose.with-collector.yaml run signals-collector config validate --config=/dev/config/postgres.kafka.stdout.yaml
+
+Creating dev_signals-collector_run ... done
+/dev/config/postgres.kafka.stdout.yaml
+VALID=true
+```
+
+- Invoke Collector
+```
+docker-compose -f dev/compose.with-collector.yaml run signals-collector config invoke --config=/dev/config/postgres.kafka.stdout.yaml
+
+Creating dev_signals-collector_run ... done
+{"level":"info","ts":1703725219.4218154,"caller":"collector/collector.go:165","msg":"collector.Invoke","id":"d20161ac-be75-4868-8794-04d7bfa7d9d3","name":"postgres.users.total.24h"}
+{"uuid":"a540fb6c-1638-4109-a385-3b0afda6fa12","name":"core.users.total","value":3,"type":"COUNT","tags":{"customer":"google"},"timestamp":"2023-12-28T01:00:19.422545549Z","grain_datetime":"2023-12-28T00:00:00Z"}
+{"uuid":"fdac2b3f-a053-4997-b1a3-1ce1c6ca89a4","name":"core.users.total","value":2,"type":"COUNT","tags":{"customer":"amazon"},"timestamp":"2023-12-28T01:00:19.422548216Z","grain_datetime":"2023-12-28T00:00:00Z"}
+```
+
+- Verify Kafka Output
+```
+docker exec -it kafka1 kafka-console-consumer --bootstrap-server=localhost:9092 --topic=signals --from-beginning
+
+{"uuid":"a540fb6c-1638-4109-a385-3b0afda6fa12","name":"core.users.total","value":3,"type":"COUNT","tags":{"customer":"google"},"timestamp":"2023-12-28T01:00:19.422545549Z","grain_datetime":"2023-12-28T00:00:00Z"}
+{"uuid":"fdac2b3f-a053-4997-b1a3-1ce1c6ca89a4","name":"core.users.total","value":2,"type":"COUNT","tags":{"customer":"amazon"},"timestamp":"2023-12-28T01:00:19.422548216Z","grain_datetime":"2023-12-28T00:00:00Z"}
+```
+
+- Run Collector as daemon
+
+```
+docker-compose -f dev/compose.with-collector.yaml run signals-collector run -c=/dev/config
+
+Creating dev_signals-collector_run ... done
+{"level":"info","ts":1703726983.41746,"caller":"cmd/run.go:52","msg":"loading configs","path":"/dev/config"}
+{"level":"info","ts":1703726983.4632287,"caller":"cmd/run.go:71","msg":"initialized collectors","num_collectors":5}
+{"level":"info","ts":1703726983.4632988,"caller":"service/service.go:27","msg":"run"}
+{"level":"info","ts":1703726983.4633727,"caller":"collector/collector.go:165","msg":"collector.Invoke","id":"5ba44984-a8a3-42ac-a70d-85e11f808a6c","name":"postgres.users.total.24h"}
+```
+
+- Tail the audit log, Check Kafka, Verify Vector 
+ 
+```
+tail -f dev/audit/signals.audit.log
+```
+
 ## Examples
 
 ### Example Configurations
