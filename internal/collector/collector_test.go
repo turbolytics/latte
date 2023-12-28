@@ -9,9 +9,10 @@ import (
 )
 
 func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
-
+	d := time.Duration(0)
 	coll, err := New(&internal.Config{
 		Metric: internal.Metric{
+			Grain: &d,
 			Tags: []internal.Tag{
 				{"key1", "val1"},
 				{"key2", "val2"},

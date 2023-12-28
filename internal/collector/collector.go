@@ -29,7 +29,7 @@ func (c *Collector) Close() error {
 }
 
 func (c *Collector) Transform(t time.Time, ms []*metrics.Metric) error {
-	grainDatetime := t.Truncate(*c.Config.Schedule.Interval)
+	grainDatetime := t.Truncate(*c.Config.Metric.Grain)
 
 	for _, m := range ms {
 		m.Name = c.Config.Metric.Name

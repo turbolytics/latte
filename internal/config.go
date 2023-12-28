@@ -201,7 +201,7 @@ func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {
 type validator func(Config) error
 
 func validateMetric(c Config) error {
-	if c.Schedule.Interval != nil && (c.Schedule.Interval != c.Metric.Grain) {
+	if c.Schedule.Interval != nil && (c.Schedule.Interval.Nanoseconds() != c.Metric.Grain.Nanoseconds()) {
 		return fmt.Errorf("'schedule.interval' should match 'metric.grain'")
 	}
 	return nil
