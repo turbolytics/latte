@@ -15,6 +15,7 @@ import (
 
 func NewRunCmd() *cobra.Command {
 	var configDir string
+	var otelExporter string
 
 	var runCmd = &cobra.Command{
 		Use:   "run",
@@ -30,7 +31,7 @@ func NewRunCmd() *cobra.Command {
 			// Create a meter provider.
 			// You can pass this instance directly to your instrumented code if it
 			// accepts a MeterProvider instance.
-			meterProvider, err := obs.NewMeterProvider(res)
+			meterProvider, err := obs.NewMeterProvider(obs.Exporter(otelExporter), res)
 			if err != nil {
 				panic(err)
 			}
@@ -48,6 +49,10 @@ func NewRunCmd() *cobra.Command {
 
 			logger, _ := zap.NewProduction()
 			defer logger.Sync() // flushes buffer, if any
+
+			if obs.Exporter(otelExporter) == obs.ExporterPrometheus {
+				go obs.ServeMetrics(logger, ":12223")
+			}
 
 			logger.Info(
 				"loading configs",
@@ -92,6 +97,7 @@ func NewRunCmd() *cobra.Command {
 	}
 
 	runCmd.Flags().StringVarP(&configDir, "config-dir", "c", "", "Path to config directory")
+	runCmd.Flags().StringVarP(&otelExporter, "otel-exporter", "", "prometheus", "Opentelemetry exporter: 'console', prometheus")
 	runCmd.MarkFlagRequired("config")
 
 	return runCmd
