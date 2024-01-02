@@ -13,6 +13,8 @@ import (
 	"github.com/turbolytics/collector/internal/sources"
 	"github.com/turbolytics/collector/internal/sources/mongodb"
 	"github.com/turbolytics/collector/internal/sources/postgres"
+	"github.com/turbolytics/collector/internal/sources/prometheus"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path"
@@ -64,6 +66,12 @@ func WithJustValidation(validate bool) ConfigOption {
 	}
 }
 
+func WithConfigLogger(l *zap.Logger) ConfigOption {
+	return func(c *Config) {
+		c.logger = l
+	}
+}
+
 type Config struct {
 	Name     string
 	Metric   Metric
@@ -71,6 +79,7 @@ type Config struct {
 	Source   Source
 	Sinks    map[string]Sink
 
+	logger *zap.Logger
 	// validate will skip initializing network dependencies
 	validate bool
 }
@@ -91,6 +100,13 @@ func initSource(c *Config) error {
 			c.Source.Config,
 			c.validate,
 		)
+	case sources.TypePrometheus:
+		s, err = prometheus.NewFromGenericConfig(
+			c.Source.Config,
+			prometheus.WithLogger(c.logger),
+		)
+	default:
+		return fmt.Errorf("source type: %q unknown", c.Source.Type)
 	}
 
 	if err != nil {
@@ -168,7 +184,7 @@ func parseTemplate(bs []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func NewConfigsFromDir(dirname string) ([]*Config, error) {
+func NewConfigsFromDir(dirname string, opts ...ConfigOption) ([]*Config, error) {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		return nil, err
@@ -181,7 +197,7 @@ func NewConfigsFromDir(dirname string) ([]*Config, error) {
 		}
 
 		n := path.Join(dirname, f.Name())
-		c, err := NewConfigFromFile(n)
+		c, err := NewConfigFromFile(n, opts...)
 		if err != nil {
 			return nil, err
 		}

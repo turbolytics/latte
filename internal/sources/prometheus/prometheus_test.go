@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/turbolytics/collector/internal/metrics"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -107,8 +108,9 @@ func TestPrometheus_Source_Success(t *testing.T) {
 	u, _ := url.Parse(ts.URL)
 
 	p := &Prometheus{
+		logger: zap.NewNop(),
 		config: config{
-			URL: u,
+			url: u,
 			SQL: `
 SELECT
 	metric->>'collector_name' as collector_name,

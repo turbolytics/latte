@@ -11,17 +11,30 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/metrics"
 	scsql "github.com/turbolytics/collector/internal/sources/sql"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
 )
 
+type Option func(*Prometheus)
+
+func WithLogger(l *zap.Logger) Option {
+	return func(p *Prometheus) {
+		p.logger = l
+	}
+}
+
 type config struct {
-	URL *url.URL
-	SQL string
+	SQL   string
+	Query string
+	URI   string
+
+	url *url.URL
 }
 
 type Prometheus struct {
+	logger *zap.Logger
 	config config
 }
 
@@ -41,11 +54,14 @@ type apiResponse struct {
 }
 
 func (p *Prometheus) promMetrics(ctx context.Context, uri string) (*apiResponse, error) {
-	/*
-	 param := make(url.Values)
-	*/
+
+	p.logger.Info(
+		"prometheus.promMetrics",
+		zap.String("url", p.config.url.String()),
+	)
+
 	// make request to prometheus
-	resp, err := http.Get(p.config.URL.String())
+	resp, err := http.Get(p.config.url.String())
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +80,7 @@ func (p *Prometheus) promMetrics(ctx context.Context, uri string) (*apiResponse,
 }
 
 func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
-	promMetrics, err := p.promMetrics(ctx, p.config.URL.String())
+	promMetrics, err := p.promMetrics(ctx, p.config.url.String())
 	if err != nil {
 		return nil, err
 	}
@@ -151,13 +167,31 @@ CREATE TABLE prom_metrics (
 	return ms, err
 }
 
-func NewFromGenericConfig(m map[string]any, validate bool) (*Prometheus, error) {
+func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error) {
 	var conf config
 
 	if err := mapstructure.Decode(m, &conf); err != nil {
 		return nil, err
 	}
 
-	var err error
-	return nil, err
+	u, err := url.Parse(conf.URI)
+	if err != nil {
+		return nil, err
+	}
+	conf.url = u
+
+	// initialize the query a single time
+	q := conf.url.Query()
+	q.Add("query", conf.Query)
+	conf.url.RawQuery = q.Encode()
+
+	p := &Prometheus{
+		config: conf,
+	}
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p, nil
 }
