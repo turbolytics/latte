@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/metrics"
+	scsql "github.com/turbolytics/collector/internal/sources/sql"
 	"strconv"
 )
 
@@ -57,29 +58,11 @@ func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	}
 	defer rows.Close()
 
-	var results []map[string]any
-
-	cols, err := rows.Columns()
+	results, err := scsql.RowsToMaps(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	for rows.Next() {
-		data := make(map[string]any)
-		columns := make([]string, len(cols))
-		columnPointers := make([]interface{}, len(cols))
-		for i, _ := range columns {
-			columnPointers[i] = &columns[i]
-		}
-
-		rows.Scan(columnPointers...)
-
-		for i, colName := range cols {
-			data[colName] = columns[i]
-		}
-
-		results = append(results, data)
-	}
 	ms, err := resultsToMetrics(results)
 	return ms, err
 }

@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/turbolytics/collector/internal/metrics"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func TestPrometheus_Source_Success(t *testing.T) {
@@ -109,13 +111,69 @@ func TestPrometheus_Source_Success(t *testing.T) {
 			URL: u,
 			SQL: `
 SELECT
-	COUNT(*) as value
+	metric->>'collector_name' as collector_name,
+	CASE 
+		WHEN metric->>'result_status_code' = 'OK'
+		THEN false 
+		ELSE true
+	END as error,
+	round(value::DOUBLE, 0) as value
 FROM 
 	prom_metrics
 `,
 		},
 	}
 
-	_, err := p.Source(context.Background())
+	ms, err := p.Source(context.Background())
 	assert.NoError(t, err)
+
+	for _, m := range ms {
+		m.UUID = ""
+		m.Timestamp = time.Time{}
+	}
+
+	assert.Equal(t, []*metrics.Metric{
+		{
+			Value: 8555,
+			Tags: map[string]string{
+				"collector_name": "mongo.users.10s",
+				"error":          "false",
+			},
+		},
+		{
+			Value: 1473,
+			Tags: map[string]string{
+				"collector_name": "postgres.users.total.1m",
+				"error":          "false",
+			},
+		},
+		{
+			Value: 0,
+			Tags: map[string]string{
+				"collector_name": "postgres.users.total.24h",
+				"error":          "true",
+			},
+		},
+		{
+			Value: 1,
+			Tags: map[string]string{
+				"collector_name": "postgres.users.total.24h",
+				"error":          "false",
+			},
+		},
+		{
+			Value: 0,
+			Tags: map[string]string{
+				"collector_name": "postgres.users.total.30s",
+				"error":          "true",
+			},
+		},
+		{
+			Value: 2941,
+			Tags: map[string]string{
+				"collector_name": "postgres.users.total.30s",
+				"error":          "false",
+			},
+		},
+	}, ms)
 }
