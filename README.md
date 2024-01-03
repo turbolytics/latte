@@ -8,8 +8,9 @@ Signals collector produces analytic telemetry, allowing business analytics and b
 
 - Postgres
 - Mongodb
+- Promtheus
 
-<img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/15641829-7be3-4e73-b4b7-d7a9f1cc3f9b">
+<img width="598" alt="Screenshot 2024-01-03 at 6 38 59 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/4981607a-6dd9-49e8-8781-402b1e816c91">
 
 Signals Collector is a new class of tooling for Extract Transform and Aggregation (ETA). Signals collector aggregates data at the source and only emits the aggregations for downstream processing in the datalake or datawarehouse:
 
@@ -26,11 +27,18 @@ CREATE TABLE users (
 
 Signals collector aggregates data at the source and only emits the aggregated data, at the grain consumed by end users. Imagine the users has 2 customers, amazon and google, with 1MM users:
 
+```
+INSERT INTO users VALUES ('amazon', NOW());
+INSERT INTO users VALUES ('google', NOW());
+INSERT INTO users VALUES ('amazon', NOW());
+INSERT INTO users VALUES ('google', NOW());
+INSERT INTO users VALUES ('google', NOW());
+...
+```
 
 Signals collector can aggregate user counts at the source:
 
 <img width="911" alt="Screenshot 2023-12-24 at 9 05 22 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/80a59dcc-4f5e-4dd3-95bb-b9402cb3e6e7">
-
 
 This will produce 2 data points per day, reducing the need to egress millions of users to a datalake or data warehouse:
 
