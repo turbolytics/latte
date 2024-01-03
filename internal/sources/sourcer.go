@@ -8,8 +8,9 @@ import (
 type Type string
 
 const (
-	TypePostgres Type = "postgres"
-	TypeMongoDB  Type = "mongodb"
+	TypePostgres   Type = "postgres"
+	TypeMongoDB    Type = "mongodb"
+	TypePrometheus Type = "prometheus"
 )
 
 type Sourcer interface {

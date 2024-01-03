@@ -9,13 +9,7 @@ COPY cmd/ ./cmd
 COPY internal/ ./internal
 COPY go.mod/ ./go.mod
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /signals-collector cmd/main.go
-
-FROM gcr.io/distroless/base-debian11 AS build-release-stage
-
-WORKDIR /
-
-COPY --from=build-stage /signals-collector /signals-collector
+RUN CGO_ENABLED=1 GOOS=linux go build -o /signals-collector cmd/main.go
 
 ENTRYPOINT ["/signals-collector"]
 

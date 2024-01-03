@@ -3,11 +3,10 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/metrics"
-	"strconv"
+	scsql "github.com/turbolytics/collector/internal/sources/sql"
 )
 
 type config struct {
@@ -20,36 +19,6 @@ type Postgres struct {
 	db     *sql.DB
 }
 
-func resultsToMetrics(results []map[string]any) ([]*metrics.Metric, error) {
-	var ms []*metrics.Metric
-	for _, r := range results {
-		val, ok := r["value"]
-		if !ok {
-			return nil, fmt.Errorf("each row must contain a %q key", "value")
-		}
-
-		m := metrics.New()
-
-		switch v := val.(type) {
-		case int:
-			m.Value = float64(v)
-		case string:
-			tv, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return nil, fmt.Errorf("unable to parse string to float: %q", v)
-			}
-			m.Value = tv
-		}
-		delete(r, "value")
-		for k, v := range r {
-			m.Tags[k] = v.(string)
-		}
-		ms = append(ms, &m)
-	}
-
-	return ms, nil
-}
-
 func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	rows, err := p.db.QueryContext(ctx, p.config.SQL)
 	if err != nil {
@@ -57,30 +26,12 @@ func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	}
 	defer rows.Close()
 
-	var results []map[string]any
-
-	cols, err := rows.Columns()
+	results, err := scsql.RowsToMaps(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	for rows.Next() {
-		data := make(map[string]any)
-		columns := make([]string, len(cols))
-		columnPointers := make([]interface{}, len(cols))
-		for i, _ := range columns {
-			columnPointers[i] = &columns[i]
-		}
-
-		rows.Scan(columnPointers...)
-
-		for i, colName := range cols {
-			data[colName] = columns[i]
-		}
-
-		results = append(results, data)
-	}
-	ms, err := resultsToMetrics(results)
+	ms, err := metrics.MapsToMetrics(results)
 	return ms, err
 }
 

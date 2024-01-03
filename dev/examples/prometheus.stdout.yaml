@@ -1,0 +1,33 @@
+name: availability.collector.1m
+
+metric:
+  name: availability.collector.1m
+  type: COUNT
+  grain: 1m
+  tags:
+    - key: env
+      value: prod
+
+schedule:
+  interval: 1m
+
+source:
+  type: prometheus
+  config:
+    uri: 'http://localhost:9090/api/v1/query'
+    query: 'increase(collector_invoke_count_total[24h])'
+    sql: |
+      SELECT
+        metric->>'collector_name' as collector_name,
+        CASE
+          WHEN metric->>'result_status_code' = 'OK'
+          THEN false
+          ELSE true
+        END as error,
+        round(value::DOUBLE, 0) as value
+      FROM
+        prom_metrics
+
+sinks:
+  console:
+    type: console

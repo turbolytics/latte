@@ -1,24 +1,23 @@
-package postgres
+package metrics
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/metrics"
 	"testing"
 	"time"
 )
 
-func Test_resultsToMetrics_MissingValue(t *testing.T) {
+func Test_MapsToMetrics_MissingValue(t *testing.T) {
 	rs := []map[string]any{
 		{
 			"key1": "value1",
 		},
 	}
 
-	_, err := resultsToMetrics(rs)
+	_, err := MapsToMetrics(rs)
 	assert.EqualError(t, err, "each row must contain a \"value\" key")
 }
 
-func Test_resultsToMetrics_SingleMetric(t *testing.T) {
+func Test_MapsToMetrics_SingleMetric(t *testing.T) {
 	rs := []map[string]any{
 		{
 			"key1":  "value1",
@@ -26,7 +25,7 @@ func Test_resultsToMetrics_SingleMetric(t *testing.T) {
 		},
 	}
 
-	ms, err := resultsToMetrics(rs)
+	ms, err := MapsToMetrics(rs)
 	assert.NoError(t, err)
 	// not sure how to cleanly do this
 	// right now just remove the dynamic field from
@@ -35,7 +34,7 @@ func Test_resultsToMetrics_SingleMetric(t *testing.T) {
 		m.UUID = ""
 		m.Timestamp = time.Time{}
 	}
-	assert.Equal(t, []*metrics.Metric{
+	assert.Equal(t, []*Metric{
 		{
 			Value: 2,
 			Tags: map[string]string{
