@@ -26,12 +26,12 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: "node"
-    scrape_interval: "15s"
-    static_configs:
-      - targets: ['exporter:9100']
-
-  - job_name: 'signals-collector'
+  - job_name: 'signals-collector-host'
     scrape_interval: 10s
     static_configs:
       - targets: ['host.docker.internal:12223']
+
+  - job_name: 'signals-collector-compose'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['signals-collector:12223']

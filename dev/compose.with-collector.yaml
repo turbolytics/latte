@@ -70,11 +70,29 @@ services:
     image: turbolytics/signals-collector
     hostname: signals-collector
     container_name: signals-collector
+    ports:
+      - 12223:12223
     environment:
       SC_POSTGRES_HOST: postgres
       SC_MONGO_HOST: mongodb
       SC_VECTOR_HOST: vector
+      SC_PROM_HOST: prom
       SC_KAFKA_HOST: kafka1:19092
     volumes:
       - ./examples:/dev/config
       - ./audit:/tmp/log/
+
+  prom:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
+    ports:
+      - 9090:9090
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    depends_on:
+      - prom
