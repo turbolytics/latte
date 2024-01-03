@@ -6,9 +6,9 @@ Signals Collector queries data at the source and only creates analytics data nec
 
 Signals collector produces analytic telemetry, allowing business analytics and business stakeholders to easily glean product insights from a variety of operational datasources including:
 
-- Postgres
-- Mongodb
-- Promtheus
+- [Postgres](https://www.postgresql.org/)
+- [Mongodb](https://www.mongodb.com/)
+- [Promtheus](https://prometheus.io/)
 
 <img width="598" alt="Screenshot 2024-01-03 at 6 38 59 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/4981607a-6dd9-49e8-8781-402b1e816c91">
 
