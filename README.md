@@ -195,22 +195,6 @@ tail -f dev/audit/signals.audit.log
 
 Checkout the [examples directory](./dev/examples) for configuration examples.
 
-## Concepts
-### Collector Configuration
-
-### Source
-### Sink
-### Schedule
-### Metric
-
-## Docker
-
-```
-docker build -t signals/collector .
-docker run -v $(PWD)/dev:/tmp signals-collector config validate --config=/tmp/examples/postgres.http.stdout.yaml
-```
-
-
 ## Additional Documentation
 
 Additional documention is available in the [docs/ directory](./docs)
