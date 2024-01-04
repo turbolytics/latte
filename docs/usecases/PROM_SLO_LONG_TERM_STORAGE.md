@@ -7,7 +7,7 @@ This tutorial shows how signals collector is used to capture prometheus SLO data
 <diagram>
 
 The signals collector will:
-- Scrape prometheus API daily for daily SLO data, 
+- Scrape prometheus API daily for yesterday's data 
 - Transform the prometheus API response using duckdb sql 
 - Sink the aggregate data to the configured datastores (kakfa, file audit, vector/HTTP, etc)
 
@@ -17,6 +17,126 @@ The signals collector will:
 
 ### Determine the Prometheus Query
 
-The first step is to determine the prometheus query that will produce the correct daily aggregate data.
+The first step is to determine the prometheus query that will produce the correct daily aggregate data. Prometheus ships with a web frontend that supports querying underlying prometheus data.
+
+<img width="900" alt="Screenshot 2024-01-03 at 8 34 16 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/4dc765d3-f297-4a11-8c82-d47a3caabc75">
+
+[Test the query directly against the API to see the response returned](https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries):
+
+```
+curl 'http://localhost:9090/api/v1/query?query=increase%28collector_invoke_count_total%5B24h%5D%29' | jq .
+```
+
+```
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "collector_name": "mongo.users.10s",
+          "instance": "host.docker.internal:12223",
+          "job": "signals-collector-host",
+          "otel_scope_name": "signals-collector",
+          "result_status_code": "OK"
+        },
+        "value": [
+          1704403299.513,
+          "65.28921807134175"
+        ]
+      },
+    ...
+```
+
+### Configure Signals Collector to Query Prometheus API
+
+Signals collector needs to know where to reach prometheus and the query to execute against prometheus:
+
+```yaml
+source:
+  type: prometheus
+  config:
+    uri: 'http://{{ getEnvOrDefault "SC_PROM_HOST" "localhost" }}:9090/api/v1/query'
+    query: 'increase(collector_invoke_count_total[24h])'
+    time_expression: $start_of_day
+    ...
+```
+
+Notice the `time_expression`. This is a special variable that will pass in `&time=<UNIX_TIMESTAMP>` parameter into the `query`. This will ensure idempotent data collection runs. Every time signals collector runs it will start collection from the beginning of the day. This will ensure that the date is consistent, and that the date being used is already passed, meaning that the full 24 hours of availability data is present.
+
+### Configure Signals Collector Transform 
+
+The next step is to specify the transform that will be applied to the prometheus API output:
+
+```yaml
+source:
+  type: prometheus
+  config:
+    ...
+    sql: |
+      SELECT
+        metric->>'collector_name' as service,
+        CASE
+          WHEN metric->>'result_status_code' = 'OK'
+          THEN false
+          ELSE true
+        END as error,
+        round(value::DOUBLE, 0) as value
+      FROM
+        prom_metrics
+```
+
+This sql is executed using duckdb against the API response returned from the prometheus API. Using duckdb provides the end user the power to model and transform the responses using SQL. Output from this stage will look similiar to the following:
+
+```json
+...
+{
+  "uuid": "6fc67572-76d1-4c36-a9d1-e07a5a40f5cb",
+  "name": "service.availability.24h",
+  "value": 12,
+  "type": "COUNT",
+  "tags": {
+    "env": "prod",
+    "error": "false",
+    "service": "postgres.users.total.1m"
+  },
+  "timestamp": "2024-01-04T21:30:50.345872Z",
+  "grain_datetime": "2024-01-04T00:00:00Z"
+}
+...
+```
+
+### Validate Signals Collector Config
+
+The next step is to validate the configuration:
+
+```
+go run cmd/main.go config validate --config=$(PWD)/dev/examples/prometheus.stdout.yaml
+
+VALID=true
+```
+
+### Invoke Signals Collector Config
+
+After the collector configuration is validated it can be invoked, using the following command:
+
+```
+go run cmd/main.go config invoke --config=$(PWD)/dev/examples/prometheus.stdout.yaml
+```
+
+### Start Signals collector for regular collection
+
+```
+go run cmd/main.go run -c /path/to/your/configuration/file.yaml
+```
+
+### Query Output for Reporting
+
+The final step is to query data for reporting. This example collects availability data daily. Error and non-error counts are collected which allow for availability calculation over arbitrary intervals 
+
+sum(success) 
+/ 
+sum(successes + errors)
 
 
