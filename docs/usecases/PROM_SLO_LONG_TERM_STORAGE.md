@@ -4,12 +4,13 @@ Prometheus is a timeseries data store for operational telemetry. Prometheus is u
 
 This tutorial shows how signals collector is used to capture prometheus SLO data for long term storage in a datalake or datawarehouse.
 
-<diagram>
+<img width="658" alt="Screenshot 2024-01-04 at 4 55 19 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/8ac50eb9-afba-47e6-8f3e-96eb2343d44a">
 
 The signals collector will:
-- Scrape prometheus API daily for yesterday's data 
-- Transform the prometheus API response using duckdb sql 
-- Sink the aggregate data to the configured datastores (kakfa, file audit, vector/HTTP, etc)
+
+1. Scrape prometheus API daily for yesterday's data 
+2. Transform the prometheus API response using duckdb sql 
+3. Sink the aggregate data to the configured datastores (kakfa, file audit, vector/HTTP, etc)
 
 ## Configuration File
 
