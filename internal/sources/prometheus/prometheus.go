@@ -15,6 +15,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"time"
 )
 
 type Option func(*Prometheus)
@@ -26,9 +28,10 @@ func WithLogger(l *zap.Logger) Option {
 }
 
 type config struct {
-	SQL   string
-	Query string
-	URI   string
+	SQL            string
+	Query          string
+	URI            string
+	TimeExpression string `mapstructure:"time_expression"`
 
 	url *url.URL
 }
@@ -57,11 +60,11 @@ func (p *Prometheus) promMetrics(ctx context.Context, uri string) (*apiResponse,
 
 	p.logger.Info(
 		"prometheus.promMetrics",
-		zap.String("url", p.config.url.String()),
+		zap.String("url", uri),
 	)
 
 	// make request to prometheus
-	resp, err := http.Get(p.config.url.String())
+	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +82,34 @@ func (p *Prometheus) promMetrics(ctx context.Context, uri string) (*apiResponse,
 	return &apiResp, nil
 }
 
+func queryTimeUnix(qTime string) (int64, error) {
+	switch qTime {
+	case "$start_of_day":
+		ct := time.Now().UTC()
+		startOfDay := time.Date(ct.Year(), ct.Month(), ct.Day(), 0, 0, 0, 0, ct.Location())
+		return startOfDay.Unix(), nil
+	}
+	return 0, fmt.Errorf("query time %q not supported, currently supports($start_of_day)", qTime)
+}
+
 func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
-	promMetrics, err := p.promMetrics(ctx, p.config.url.String())
+	u, _ := url.Parse(p.config.url.String())
+	q := u.Query()
+	q.Add("query", p.config.Query)
+
+	if p.config.TimeExpression != "" {
+		qt, err := queryTimeUnix(p.config.TimeExpression)
+		if err != nil {
+			return nil, err
+		}
+
+		q.Add("time", strconv.FormatInt(qt, 10))
+	}
+
+	u.RawQuery = q.Encode()
+	fmt.Println(u.String())
+
+	promMetrics, err := p.promMetrics(ctx, u.String())
 	if err != nil {
 		return nil, err
 	}
@@ -179,11 +208,6 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error)
 		return nil, err
 	}
 	conf.url = u
-
-	// initialize the query a single time
-	q := conf.url.Query()
-	q.Add("query", conf.Query)
-	conf.url.RawQuery = q.Encode()
 
 	p := &Prometheus{
 		config: conf,
