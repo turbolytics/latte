@@ -1,24 +1,24 @@
-name: availability.collector.1m
+name: service.availability.24h
 
 metric:
-  name: availability.collector.1m
+  name: service.availability.24h
   type: COUNT
-  grain: 1m
+  grain: 24h
   tags:
     - key: env
       value: prod
 
 schedule:
-  interval: 1m
+  interval: 24h
 
 source:
   type: prometheus
   config:
-    uri: 'http://localhost:9090/api/v1/query'
+    uri: 'http://{{ getEnvOrDefault "SC_PROM_HOST" "localhost" }}:9090/api/v1/query'
     query: 'increase(collector_invoke_count_total[24h])'
     sql: |
       SELECT
-        metric->>'collector_name' as collector_name,
+        metric->>'collector_name' as service,
         CASE
           WHEN metric->>'result_status_code' = 'OK'
           THEN false
@@ -31,3 +31,11 @@ source:
 sinks:
   console:
     type: console
+
+  audit:
+    # audit log for data durability and redriving
+    # can be combined with linux logrotate tools:
+    # https://www.redhat.com/sysadmin/setting-logrotate
+    type: file
+    config:
+      path: /tmp/log/signals.audit.log
