@@ -14,6 +14,8 @@ The signals collector will:
 
 ## Configuration File
 
+<img width="927" alt="Screenshot 2024-01-04 at 4 58 44 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/64423f0f-360c-4fe3-8a86-16251a59de6b">
+
 ## Tutorial
 
 ### Determine the Prometheus Query
