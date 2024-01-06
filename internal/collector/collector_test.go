@@ -37,3 +37,22 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 		},
 	}}, ms)
 }
+
+func TestCollector_Close(t *testing.T) {
+	ts := &TestSink{}
+	coll := &Collector{
+		Config: &internal.Config{
+			Sinks: map[string]internal.Sink{
+				"sink1": {
+					Sinker: ts,
+				},
+				"sink2": {
+					Sinker: ts,
+				},
+			},
+		},
+	}
+	err := coll.Close()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, ts.closes)
+}

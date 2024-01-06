@@ -60,7 +60,7 @@ type Source struct {
 
 type ConfigOption func(*Config)
 
-func WithJustValidation(validate bool) ConfigOption {
+func WithJustConfigValidation(validate bool) ConfigOption {
 	return func(c *Config) {
 		c.validate = validate
 	}
