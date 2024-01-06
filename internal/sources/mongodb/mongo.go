@@ -26,7 +26,10 @@ func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	p, err := ParseAgg(m.config.Agg)
 
 	col := m.client.Database(m.config.Database).Collection(m.config.Collection)
-	cursor, err := col.Aggregate(context.TODO(), p)
+	cursor, err := col.Aggregate(
+		context.TODO(),
+		p,
+	)
 	if err != nil {
 		return nil, err
 	}

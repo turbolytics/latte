@@ -1,6 +1,9 @@
 
 
 test-unit:
-	go test ./... -v
+	go test -short ./... -v
 
-.PHONY: test-unit
+test-integration:
+	go test -run TestIntegration ./... -v
+
+.PHONY: test-unit test-integration
