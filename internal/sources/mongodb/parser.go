@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -11,7 +12,7 @@ func ParseAgg(agg string) (mongo.Pipeline, error) {
 	var q interface{}
 	bs := []byte(agg)
 	if err := bson.UnmarshalExtJSON(bs, true, &q); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ensure that aggregate is valid json: %v", err)
 	}
 
 	var p mongo.Pipeline

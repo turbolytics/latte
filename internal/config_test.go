@@ -30,9 +30,18 @@ func TestNewConfigFromFile(t *testing.T) {
 			fPath := path.Join(exampleDir, tc.fileName)
 			_, err := NewConfigFromFile(
 				fPath,
-				WithJustValidation(true),
+				WithJustConfigValidation(true),
 			)
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestNewConfigsFromDir(t *testing.T) {
+	_, err := NewConfigsFromDir(
+		exampleDir,
+		WithJustConfigValidation(true),
+	)
+	assert.NoError(t, err)
+
 }

@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"strconv"
 )
 
 type config struct {
@@ -24,44 +23,17 @@ type Mongo struct {
 	client *mongo.Client
 }
 
-func resultsToMetrics(results []bson.M) ([]*metrics.Metric, error) {
-	var ms []*metrics.Metric
-	for _, r := range results {
-		val, ok := r["value"]
-		if !ok {
-			return nil, fmt.Errorf("each row must contain a %q key", "value")
-		}
-
-		m := metrics.New()
-
-		switch v := val.(type) {
-		case int:
-			m.Value = float64(v)
-		case int32:
-			m.Value = float64(v)
-		case int64:
-			m.Value = float64(v)
-		case string:
-			tv, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return nil, fmt.Errorf("unable to parse string to float: %q", v)
-			}
-			m.Value = tv
-		}
-		delete(r, "value")
-		for k, v := range r {
-			m.Tags[k] = v.(string)
-		}
-		ms = append(ms, &m)
-	}
-	return ms, nil
-}
-
 func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	p, err := ParseAgg(m.config.Agg)
+	if err != nil {
+		return nil, err
+	}
 
 	col := m.client.Database(m.config.Database).Collection(m.config.Collection)
-	cursor, err := col.Aggregate(context.TODO(), p)
+	cursor, err := col.Aggregate(
+		context.TODO(),
+		p,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +42,14 @@ func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	if err = cursor.All(context.TODO(), &results); err != nil {
 		return nil, err
 	}
-	ms, err := resultsToMetrics(results)
+
+	fmt.Println(results)
+	var rs []map[string]any
+	for _, r := range results {
+		rs = append(rs, r)
+	}
+
+	ms, err := metrics.MapsToMetrics(rs)
 	return ms, err
 }
 
@@ -83,7 +62,9 @@ func NewFromGenericConfig(ctx context.Context, m map[string]any, validate bool) 
 	var client *mongo.Client
 	var err error
 	if validate {
-		_, err = ParseAgg(conf.Agg)
+		if _, err = ParseAgg(conf.Agg); err != nil {
+			return nil, err
+		}
 	} else {
 		client, err = mongo.Connect(ctx, options.Client().ApplyURI(conf.URI))
 		if err != nil {
