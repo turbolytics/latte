@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/metrics"
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,6 +25,9 @@ type Mongo struct {
 
 func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	p, err := ParseAgg(m.config.Agg)
+	if err != nil {
+		return nil, err
+	}
 
 	col := m.client.Database(m.config.Database).Collection(m.config.Collection)
 	cursor, err := col.Aggregate(
@@ -39,6 +43,7 @@ func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
 		return nil, err
 	}
 
+	fmt.Println(results)
 	var rs []map[string]any
 	for _, r := range results {
 		rs = append(rs, r)
@@ -57,7 +62,9 @@ func NewFromGenericConfig(ctx context.Context, m map[string]any, validate bool) 
 	var client *mongo.Client
 	var err error
 	if validate {
-		_, err = ParseAgg(conf.Agg)
+		if _, err = ParseAgg(conf.Agg); err != nil {
+			return nil, err
+		}
 	} else {
 		client, err = mongo.Connect(ctx, options.Client().ApplyURI(conf.URI))
 		if err != nil {

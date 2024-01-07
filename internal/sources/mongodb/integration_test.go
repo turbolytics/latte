@@ -66,6 +66,7 @@ func TestIntegration_Mongo_Source(t *testing.T) {
 	{ 
 	  "$group": { "_id": "$account", "value": { "$count": {} } } 
 	},
+	{ "$sort" : { "_id" : 1 } },
 	{ 
 	  "$addFields": { 
 		"account": {  "$toString": "$_id" } 
@@ -81,7 +82,6 @@ func TestIntegration_Mongo_Source(t *testing.T) {
 	)
 
 	assert.NoError(t, err)
-
 	ms, err := mSource.Source(ctx)
 	assert.NoError(t, err)
 
