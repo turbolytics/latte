@@ -6,4 +6,7 @@ test-unit:
 test-integration:
 	go test -run TestIntegration ./... -v
 
+
+test: test-unit test-integration
+
 .PHONY: test-unit test-integration
