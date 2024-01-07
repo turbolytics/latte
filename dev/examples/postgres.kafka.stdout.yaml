@@ -1,4 +1,4 @@
-name: postgres.users.total.24h
+name: postgres_users_total_24h
 
 metric:
   name: core.users.total

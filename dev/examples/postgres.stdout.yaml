@@ -1,4 +1,4 @@
-name: postgres.users.total.1m
+name: postgres_users_total_1m
 
 metric:
   name: core.users.total
