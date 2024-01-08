@@ -1,9 +1,8 @@
-name: service_availability_24h
+name: service_availability_5m
 
 metric:
   name: service.availability.5m
   type: COUNT
-  grain: 5m
   tags:
     - key: env
       value: prod

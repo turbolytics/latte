@@ -121,7 +121,6 @@ func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	}
 
 	u.RawQuery = q.Encode()
-	fmt.Println(u.String())
 
 	promMetrics, err := p.promMetrics(ctx, u.String())
 	if err != nil {
