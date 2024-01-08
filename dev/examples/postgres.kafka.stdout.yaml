@@ -2,7 +2,6 @@ name: postgres_users_total_24h
 
 metric:
   name: core.users.total
-  grain: 24h
   type: COUNT
 
 schedule:
