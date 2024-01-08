@@ -29,6 +29,10 @@ const (
 	TypeSchedulerStrategyTick     TypeSchedulerStrategy = "tick"
 )
 
+type validateable interface {
+	Validate() error
+}
+
 type Tag struct {
 	Key   string
 	Value string
@@ -44,6 +48,27 @@ type Schedule struct {
 	Interval *time.Duration
 	Cron     *string
 	Strategy TypeSchedulerStrategy
+}
+
+func (s Schedule) Validate() error {
+	if s.Interval == nil && s.Cron == nil {
+		return fmt.Errorf("must set schedule.interval or schedule.cron")
+	}
+
+	if s.Interval != nil && s.Cron != nil {
+		return fmt.Errorf("must set either schedule.interval or schedule.cron")
+	}
+
+	vs := map[TypeSchedulerStrategy]struct{}{
+		TypeSchedulerStrategyTick:     {},
+		TypeSchedulerStrategyStateful: {},
+	}
+
+	if _, ok := vs[s.Strategy]; !ok {
+		return fmt.Errorf("unknown strategy: %q", s.Strategy)
+	}
+
+	return nil
 }
 
 func (s *Schedule) SetDefaults() {
@@ -225,24 +250,6 @@ func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {
 	return NewConfig(bs, opts...)
 }
 
-type validator func(Config) error
-
-func validateMetric(c Config) error {
-	return nil
-}
-
-func validateSchedule(c Config) error {
-	if c.Schedule.Interval == nil && c.Schedule.Cron == nil {
-		return fmt.Errorf("must set schedule.interval or schedule.cron")
-	}
-
-	if c.Schedule.Interval != nil && c.Schedule.Cron != nil {
-		return fmt.Errorf("must set either schedule.interval or schedule.cron")
-	}
-
-	return nil
-}
-
 func defaults(c *Config) error {
 	(&c.Schedule).SetDefaults()
 
@@ -250,13 +257,12 @@ func defaults(c *Config) error {
 }
 
 func validate(c Config) error {
-	validators := []validator{
-		validateSchedule,
-		validateMetric,
+	validators := []validateable{
+		c.Schedule,
 	}
 
-	for _, vFn := range validators {
-		if err := vFn(c); err != nil {
+	for _, v := range validators {
+		if err := v.Validate(); err != nil {
 			return err
 		}
 	}
