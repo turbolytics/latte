@@ -43,5 +43,10 @@ func TestNewConfigsFromDir(t *testing.T) {
 		WithJustConfigValidation(true),
 	)
 	assert.NoError(t, err)
+}
 
+func TestSchedule_SetDefaults_Schedule(t *testing.T) {
+	conf := &Config{}
+	defaults(conf)
+	assert.Equal(t, TypeSchedulerStrategyTick, conf.Schedule.Strategy)
 }

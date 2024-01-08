@@ -22,6 +22,13 @@ import (
 	"time"
 )
 
+type TypeSchedulerStrategy string
+
+const (
+	TypeSchedulerStrategyStateful TypeSchedulerStrategy = "stateful"
+	TypeSchedulerStrategyTick     TypeSchedulerStrategy = "tick"
+)
+
 type Tag struct {
 	Key   string
 	Value string
@@ -36,6 +43,13 @@ type Metric struct {
 type Schedule struct {
 	Interval *time.Duration
 	Cron     *string
+	Strategy TypeSchedulerStrategy
+}
+
+func (s *Schedule) SetDefaults() {
+	if s.Strategy == "" {
+		s.Strategy = TypeSchedulerStrategyTick
+	}
 }
 
 type Collector struct {
@@ -229,6 +243,12 @@ func validateSchedule(c Config) error {
 	return nil
 }
 
+func defaults(c *Config) error {
+	(&c.Schedule).SetDefaults()
+
+	return nil
+}
+
 func validate(c Config) error {
 	validators := []validator{
 		validateSchedule,
@@ -258,6 +278,10 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 	}
 
 	if err := yaml.Unmarshal(bs, &conf); err != nil {
+		return nil, err
+	}
+
+	if err := defaults(&conf); err != nil {
 		return nil, err
 	}
 
