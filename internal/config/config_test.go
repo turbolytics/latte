@@ -1,4 +1,4 @@
-package internal
+package config
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ var exampleDir string
 
 func init() {
 	currDir, _ := os.Getwd()
-	exampleDir = path.Join(currDir, "..", "dev", "examples")
+	exampleDir = path.Join(currDir, "..", "..", "dev", "examples")
 }
 
 func TestNewConfigFromFile(t *testing.T) {

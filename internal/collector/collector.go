@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/google/uuid"
-	"github.com/turbolytics/collector/internal"
+	"github.com/turbolytics/collector/internal/config"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/obs"
 	"go.opentelemetry.io/otel"
@@ -18,7 +18,7 @@ var meter = otel.Meter("signals-collector")
 
 type Collector struct {
 	logger *zap.Logger
-	Config *internal.Config
+	Config *config.Config
 }
 
 func (c *Collector) Close() error {
@@ -200,7 +200,7 @@ func WithLogger(l *zap.Logger) Option {
 	}
 }
 
-func New(config *internal.Config, opts ...Option) (*Collector, error) {
+func New(config *config.Config, opts ...Option) (*Collector, error) {
 	c := &Collector{
 		Config: config,
 	}
@@ -210,7 +210,7 @@ func New(config *internal.Config, opts ...Option) (*Collector, error) {
 	return c, nil
 }
 
-func NewFromConfigs(configs []*internal.Config, opts ...Option) ([]*Collector, error) {
+func NewFromConfigs(configs []*config.Config, opts ...Option) ([]*Collector, error) {
 	var cs []*Collector
 	for _, config := range configs {
 		coll, err := New(config, opts...)
