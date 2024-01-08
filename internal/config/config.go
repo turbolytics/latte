@@ -94,15 +94,15 @@ type Source struct {
 	Config  map[string]any
 }
 
-type ConfigOption func(*Config)
+type Option func(*Config)
 
-func WithJustConfigValidation(validate bool) ConfigOption {
+func WithJustValidation(validate bool) Option {
 	return func(c *Config) {
 		c.validate = validate
 	}
 }
 
-func WithConfigLogger(l *zap.Logger) ConfigOption {
+func WithLogger(l *zap.Logger) Option {
 	return func(c *Config) {
 		c.logger = l
 	}
@@ -220,7 +220,7 @@ func parseTemplate(bs []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func NewConfigsFromDir(dirname string, opts ...ConfigOption) ([]*Config, error) {
+func NewFromDir(dirname string, opts ...Option) ([]*Config, error) {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		return nil, err
@@ -233,7 +233,7 @@ func NewConfigsFromDir(dirname string, opts ...ConfigOption) ([]*Config, error) 
 		}
 
 		n := path.Join(dirname, f.Name())
-		c, err := NewConfigFromFile(n, opts...)
+		c, err := NewFromFile(n, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -242,12 +242,12 @@ func NewConfigsFromDir(dirname string, opts ...ConfigOption) ([]*Config, error) 
 	return configs, nil
 }
 
-func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {
+func NewFromFile(name string, opts ...Option) (*Config, error) {
 	bs, err := os.ReadFile(name)
 	if err != nil {
 		return nil, err
 	}
-	return NewConfig(bs, opts...)
+	return New(bs, opts...)
 }
 
 func defaults(c *Config) error {
@@ -269,9 +269,9 @@ func validate(c Config) error {
 	return nil
 }
 
-// NewConfig initializes a config from yaml bytes.
-// NewConfig initializes all subtypes as well.
-func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
+// New initializes a config from yaml bytes.
+// New initializes all subtypes as well.
+func New(raw []byte, opts ...Option) (*Config, error) {
 	var conf Config
 
 	for _, opt := range opts {

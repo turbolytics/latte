@@ -60,9 +60,9 @@ func NewRunCmd() *cobra.Command {
 			)
 
 			// initialize all collectors in the path
-			confs, err := config.NewConfigsFromDir(
+			confs, err := config.NewFromDir(
 				configDir,
-				config.WithConfigLogger(logger),
+				config.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)

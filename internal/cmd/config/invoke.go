@@ -20,9 +20,9 @@ func NewInvokeCmd() *cobra.Command {
 			defer logger.Sync() // flushes buffer, if any
 
 			ctx := context.Background()
-			config, err := config.NewConfigFromFile(
+			config, err := config.NewFromFile(
 				configPath,
-				config.WithConfigLogger(logger),
+				config.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
