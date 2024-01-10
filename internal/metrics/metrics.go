@@ -23,6 +23,11 @@ type Metric struct {
 	Type      Type              `json:"type"`
 	Tags      map[string]string `json:"tags"`
 	Timestamp time.Time         `json:"timestamp"`
+
+	// The bucket of time that the reading represents.
+	// For 'tick' collectors, this time aligns with the `Timestamp`.
+	// For `stateful` collectors, this time represents the windowing being collected.
+	GrainDatetime time.Time `json:"grain_datetime"`
 }
 
 func New(opts ...MetricOption) Metric {

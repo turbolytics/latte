@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/google/uuid"
+	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/config"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/obs"
@@ -17,7 +18,9 @@ import (
 var meter = otel.Meter("signals-collector")
 
 type Collector struct {
-	logger *zap.Logger
+	logger      *zap.Logger
+	stateStorer state.Storer
+
 	Config *config.Config
 }
 
@@ -197,6 +200,12 @@ type Option func(*Collector)
 func WithLogger(l *zap.Logger) Option {
 	return func(c *Collector) {
 		c.logger = l
+	}
+}
+
+func WithStateStorer(s state.Storer) Option {
+	return func(c *Collector) {
+		c.stateStorer = s
 	}
 }
 

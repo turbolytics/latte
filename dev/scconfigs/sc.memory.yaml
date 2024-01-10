@@ -1,0 +1,3 @@
+
+state_store:
+  type: memory
