@@ -53,6 +53,19 @@ type Source struct {
 	Config  map[string]any
 }
 
+type Config struct {
+	Name       string
+	Metric     Metric
+	Schedule   Schedule
+	Source     Source
+	Sinks      map[string]Sink
+	StateStore StateStore
+
+	logger *zap.Logger
+	// validate will skip initializing network dependencies
+	validate bool
+}
+
 type Option func(*Config)
 
 func WithJustValidation(validate bool) Option {
@@ -65,18 +78,6 @@ func WithLogger(l *zap.Logger) Option {
 	return func(c *Config) {
 		c.logger = l
 	}
-}
-
-type Config struct {
-	Name     string
-	Metric   Metric
-	Schedule Schedule
-	Source   Source
-	Sinks    map[string]Sink
-
-	logger *zap.Logger
-	// validate will skip initializing network dependencies
-	validate bool
 }
 
 // initSource initializes the correct source.
@@ -201,14 +202,6 @@ func NewFromDir(dirname string, opts ...Option) ([]*Config, error) {
 	return configs, nil
 }
 
-func NewFromFile(name string, opts ...Option) (*Config, error) {
-	bs, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	return New(bs, opts...)
-}
-
 func defaults(c *Config) error {
 	(&c.Schedule).SetDefaults()
 
@@ -218,6 +211,7 @@ func defaults(c *Config) error {
 func validate(c Config) error {
 	validators := []validateable{
 		c.Schedule,
+		c.StateStore,
 	}
 
 	for _, v := range validators {
@@ -226,6 +220,14 @@ func validate(c Config) error {
 		}
 	}
 	return nil
+}
+
+func NewFromFile(name string, opts ...Option) (*Config, error) {
+	bs, err := os.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+	return New(bs, opts...)
 }
 
 // New initializes a config from yaml bytes.
@@ -251,6 +253,10 @@ func New(raw []byte, opts ...Option) (*Config, error) {
 	}
 
 	if err := validate(conf); err != nil {
+		return nil, err
+	}
+
+	if err := initStateStore(&conf); err != nil {
 		return nil, err
 	}
 

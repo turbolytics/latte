@@ -1,5 +1,8 @@
 name: service_availability_5m
 
+state_store:
+  type: memory
+
 metric:
   name: service.availability.5m
   type: COUNT

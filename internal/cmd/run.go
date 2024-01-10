@@ -6,7 +6,6 @@ import (
 	"github.com/turbolytics/collector/internal/collector"
 	"github.com/turbolytics/collector/internal/collector/service"
 	"github.com/turbolytics/collector/internal/config"
-	"github.com/turbolytics/collector/internal/config/sc"
 	"github.com/turbolytics/collector/internal/obs"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -17,7 +16,6 @@ import (
 func NewRunCmd() *cobra.Command {
 	var configDir string
 	var otelExporter string
-	var scConfigPath string
 
 	var runCmd = &cobra.Command{
 		Use:   "run",
@@ -70,18 +68,9 @@ func NewRunCmd() *cobra.Command {
 				panic(err)
 			}
 
-			scConfig, err := sc.NewFromFile(
-				scConfigPath,
-				sc.WithLogger(logger),
-			)
-			if err != nil {
-				panic(err)
-			}
-
 			cs, err := collector.NewFromConfigs(
 				confs,
 				collector.WithLogger(logger),
-				collector.WithStateStorer(scConfig.StateStore.Storer),
 			)
 			if err != nil {
 				panic(err)
@@ -112,9 +101,7 @@ func NewRunCmd() *cobra.Command {
 
 	runCmd.Flags().StringVarP(&configDir, "config-dir", "c", "", "Path to config directory")
 	runCmd.Flags().StringVarP(&otelExporter, "otel-exporter", "", "prometheus", "Opentelemetry exporter: 'console', prometheus")
-	runCmd.Flags().StringVarP(&scConfigPath, "sc-config", "", "", "Path to signals collector config file")
 	runCmd.MarkFlagRequired("config")
-	runCmd.MarkFlagRequired("sc-config")
 
 	return runCmd
 }
