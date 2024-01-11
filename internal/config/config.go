@@ -21,7 +21,7 @@ import (
 	"text/template"
 )
 
-type validateable interface {
+type validater interface {
 	Validate() error
 }
 
@@ -100,6 +100,7 @@ func initSource(c *Config) error {
 		s, err = prometheus.NewFromGenericConfig(
 			c.Source.Config,
 			prometheus.WithLogger(c.logger),
+			prometheus.WithStateStorer(c.StateStore.Storer),
 		)
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)
@@ -209,7 +210,7 @@ func defaults(c *Config) error {
 }
 
 func validate(c Config) error {
-	validators := []validateable{
+	validators := []validater{
 		c.Schedule,
 		c.StateStore,
 	}

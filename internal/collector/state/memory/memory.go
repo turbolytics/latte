@@ -10,7 +10,7 @@ type Store struct {
 	s  map[string][]*state.Invocation
 }
 
-func (m *Store) LastInvocation(collector string) (*state.Invocation, error) {
+func (m *Store) MostRecentInvocation(collector string) (*state.Invocation, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	is, found := m.s[collector]

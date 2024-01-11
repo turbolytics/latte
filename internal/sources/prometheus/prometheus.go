@@ -9,6 +9,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
+	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/metrics"
 	scsql "github.com/turbolytics/collector/internal/sources/sql"
 	"go.uber.org/zap"
@@ -24,6 +25,12 @@ type Option func(*Prometheus)
 func WithLogger(l *zap.Logger) Option {
 	return func(p *Prometheus) {
 		p.logger = l
+	}
+}
+
+func WithStateStorer(ss state.Storer) Option {
+	return func(p *Prometheus) {
+		p.stateStorer = ss
 	}
 }
 
@@ -61,8 +68,10 @@ type config struct {
 }
 
 type Prometheus struct {
-	logger *zap.Logger
-	config config
+	logger           *zap.Logger
+	config           config
+	stateStorer      state.Storer
+	scheduleStrategy Type
 }
 
 type apiMetric struct {

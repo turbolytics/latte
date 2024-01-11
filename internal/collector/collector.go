@@ -203,12 +203,6 @@ func WithLogger(l *zap.Logger) Option {
 	}
 }
 
-func WithStateStorer(s state.Storer) Option {
-	return func(c *Collector) {
-		c.stateStorer = s
-	}
-}
-
 func New(config *config.Config, opts ...Option) (*Collector, error) {
 	c := &Collector{
 		Config: config,

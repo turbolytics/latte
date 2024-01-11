@@ -17,6 +17,6 @@ type Invocation struct {
 }
 
 type Storer interface {
-	LastInvocation(collector string) (*Invocation, error)
+	MostRecentInvocation(collector string) (*Invocation, error)
 	SaveInvocation(invocation *Invocation) error
 }
