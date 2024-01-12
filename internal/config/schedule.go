@@ -2,20 +2,14 @@ package config
 
 import (
 	"fmt"
+	"github.com/turbolytics/collector/internal/schedule"
 	"time"
-)
-
-type TypeSchedulerStrategy string
-
-const (
-	TypeSchedulerStrategyStateful TypeSchedulerStrategy = "stateful"
-	TypeSchedulerStrategyTick     TypeSchedulerStrategy = "tick"
 )
 
 type Schedule struct {
 	Interval *time.Duration
 	Cron     *string
-	Strategy TypeSchedulerStrategy
+	Strategy schedule.TypeStrategy
 }
 
 func (s Schedule) Validate() error {
@@ -27,9 +21,9 @@ func (s Schedule) Validate() error {
 		return fmt.Errorf("must set either schedule.interval or schedule.cron")
 	}
 
-	vs := map[TypeSchedulerStrategy]struct{}{
-		TypeSchedulerStrategyTick:     {},
-		TypeSchedulerStrategyStateful: {},
+	vs := map[schedule.TypeStrategy]struct{}{
+		schedule.TypeStrategyTick:     {},
+		schedule.TypeStrategyStateful: {},
 	}
 
 	if _, ok := vs[s.Strategy]; !ok {
@@ -41,6 +35,6 @@ func (s Schedule) Validate() error {
 
 func (s *Schedule) SetDefaults() {
 	if s.Strategy == "" {
-		s.Strategy = TypeSchedulerStrategyTick
+		s.Strategy = schedule.TypeStrategyTick
 	}
 }

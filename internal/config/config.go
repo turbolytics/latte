@@ -101,6 +101,7 @@ func initSource(c *Config) error {
 			c.Source.Config,
 			prometheus.WithLogger(c.logger),
 			prometheus.WithStateStorer(c.StateStore.Storer),
+			prometheus.WithScheduleStrategy(c.Schedule.Strategy),
 		)
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)

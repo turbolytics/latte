@@ -44,13 +44,13 @@ func TestPrometheus_timeDurationConfig(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			te := timeDurationConfig{
-				startOfDuration: tc.startOf,
+			tw := timeWindowConfig{
+				startOfWindow: tc.startOf,
 				nowFn: func() time.Time {
 					return ct
 				},
 			}
-			epoch, err := te.Unix()
+			epoch, err := tw.Unix()
 			assert.Equal(t, tc.epoch, epoch)
 			if tc.err == nil {
 				assert.NoError(t, err)

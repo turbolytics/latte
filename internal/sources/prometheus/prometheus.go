@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/collector/internal/schedule"
 	scsql "github.com/turbolytics/collector/internal/sources/sql"
 	"go.uber.org/zap"
 	"io"
@@ -20,49 +21,37 @@ import (
 	"time"
 )
 
-type Option func(*Prometheus)
+type timeWindowConfig struct {
+	Window string `mapstructure:"window"`
 
-func WithLogger(l *zap.Logger) Option {
-	return func(p *Prometheus) {
-		p.logger = l
-	}
+	// mapstructure does not parse to native go types
+	// maybe there is a way to implement an unmarshaller
+	startOfWindow time.Duration
+	nowFn         func() time.Time
 }
 
-func WithStateStorer(ss state.Storer) Option {
-	return func(p *Prometheus) {
-		p.stateStorer = ss
-	}
-}
-
-type timeDurationConfig struct {
-	StartOf string `mapstructure:"start_of"`
-
-	startOfDuration time.Duration
-	nowFn           func() time.Time
-}
-
-func (td *timeDurationConfig) init() error {
-	td.nowFn = func() time.Time {
+func (tw *timeWindowConfig) init() error {
+	tw.nowFn = func() time.Time {
 		return time.Now().UTC()
 	}
-	d, err := time.ParseDuration(td.StartOf)
+	d, err := time.ParseDuration(tw.Window)
 	if err != nil {
 		return err
 	}
-	td.startOfDuration = d
+	tw.startOfWindow = d
 	return nil
 }
 
-func (td timeDurationConfig) Unix() (int64, error) {
-	ct := td.nowFn()
-	return ct.Truncate(td.startOfDuration).Unix(), nil
+func (tw timeWindowConfig) Unix() (int64, error) {
+	ct := tw.nowFn()
+	return ct.Truncate(tw.startOfWindow).Unix(), nil
 }
 
 type config struct {
-	SQL          string
-	Query        string
-	URI          string
-	TimeDuration *timeDurationConfig `mapstructure:"time_duration"`
+	SQL   string
+	Query string
+	URI   string
+	Time  *timeWindowConfig
 
 	url *url.URL
 }
@@ -71,7 +60,7 @@ type Prometheus struct {
 	logger           *zap.Logger
 	config           config
 	stateStorer      state.Storer
-	scheduleStrategy Type
+	scheduleStrategy schedule.TypeStrategy
 }
 
 type apiMetric struct {
@@ -120,8 +109,8 @@ func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	q := u.Query()
 	q.Add("query", p.config.Query)
 
-	if p.config.TimeDuration != nil {
-		qt, err := p.config.TimeDuration.Unix()
+	if p.config.Time != nil {
+		qt, err := p.config.Time.Unix()
 		if err != nil {
 			return nil, err
 		}
@@ -231,8 +220,8 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error)
 	}
 	conf.url = u
 
-	if conf.TimeDuration != nil {
-		if err := conf.TimeDuration.init(); err != nil {
+	if conf.Time != nil {
+		if err := conf.Time.init(); err != nil {
 			return nil, err
 		}
 	}
