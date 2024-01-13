@@ -1,4 +1,6 @@
 name: service_availability_5m
+invocation:
+  strategy: historic_window
 
 state_store:
   type: memory
@@ -12,7 +14,6 @@ metric:
 
 schedule:
   interval: 5m
-  strategy: stateful
 
 source:
   type: prometheus

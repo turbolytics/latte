@@ -2,7 +2,7 @@ package prometheus
 
 import (
 	"github.com/turbolytics/collector/internal/collector/state"
-	"github.com/turbolytics/collector/internal/schedule"
+	"github.com/turbolytics/collector/internal/invocation"
 	"go.uber.org/zap"
 )
 
@@ -20,8 +20,14 @@ func WithStateStorer(ss state.Storer) Option {
 	}
 }
 
-func WithScheduleStrategy(ss schedule.TypeStrategy) Option {
+func WithInvocationStrategy(s invocation.TypeStrategy) Option {
 	return func(p *Prometheus) {
-		p.scheduleStrategy = ss
+		p.invocationStrategy = s
+	}
+}
+
+func WithCollectorName(cn string) Option {
+	return func(p *Prometheus) {
+		p.collectorName = cn
 	}
 }

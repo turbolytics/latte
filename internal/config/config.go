@@ -55,6 +55,7 @@ type Source struct {
 
 type Config struct {
 	Name       string
+	Invocation Invocation
 	Metric     Metric
 	Schedule   Schedule
 	Source     Source
@@ -101,7 +102,8 @@ func initSource(c *Config) error {
 			c.Source.Config,
 			prometheus.WithLogger(c.logger),
 			prometheus.WithStateStorer(c.StateStore.Storer),
-			prometheus.WithScheduleStrategy(c.Schedule.Strategy),
+			prometheus.WithInvocationStrategy(c.Invocation.Strategy),
+			prometheus.WithCollectorName(c.Name),
 		)
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)
@@ -205,7 +207,7 @@ func NewFromDir(dirname string, opts ...Option) ([]*Config, error) {
 }
 
 func defaults(c *Config) error {
-	(&c.Schedule).SetDefaults()
+	(&c.Invocation).SetDefaults()
 
 	return nil
 }
@@ -213,6 +215,7 @@ func defaults(c *Config) error {
 func validate(c Config) error {
 	validators := []validater{
 		c.Schedule,
+		c.Invocation,
 		c.StateStore,
 	}
 

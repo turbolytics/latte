@@ -81,7 +81,7 @@ func NewRunCmd() *cobra.Command {
 				zap.Int("num_collectors", len(cs)),
 			)
 
-			// schedule all collectors at their desired intervals
+			// invocation all collectors at their desired intervals
 			s, err := service.NewService(
 				cs,
 				service.WithLogger(logger),

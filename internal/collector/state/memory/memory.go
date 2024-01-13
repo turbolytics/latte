@@ -24,7 +24,7 @@ func (m *Store) MostRecentInvocation(collector string) (*state.Invocation, error
 func (m *Store) SaveInvocation(invocation *state.Invocation) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.s[invocation.Collector] = append(m.s[invocation.Collector], invocation)
+	m.s[invocation.CollectorName] = append(m.s[invocation.CollectorName], invocation)
 	return nil
 }
 

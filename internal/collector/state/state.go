@@ -11,12 +11,12 @@ const (
 )
 
 type Invocation struct {
-	Collector     string
-	GrainDatetime time.Time
-	Time          time.Time
+	CollectorName  string
+	WindowDatetime time.Time
+	Time           time.Time
 }
 
 type Storer interface {
-	MostRecentInvocation(collector string) (*Invocation, error)
+	MostRecentInvocation(collectorName string) (*Invocation, error)
 	SaveInvocation(invocation *Invocation) error
 }

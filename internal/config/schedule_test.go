@@ -3,15 +3,15 @@ package config
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/schedule"
+	"github.com/turbolytics/collector/internal/invocation"
 	"testing"
 	"time"
 )
 
-func TestSchedule_SetDefaults_Schedule(t *testing.T) {
+func TestInvocation_SetDefaults_Schedule(t *testing.T) {
 	conf := &Config{}
 	defaults(conf)
-	assert.Equal(t, schedule.TypeStrategyTick, conf.Schedule.Strategy)
+	assert.Equal(t, invocation.TypeStrategyTick, conf.Invocation.Strategy)
 }
 
 func TestSchedule_Validate(t *testing.T) {
@@ -26,7 +26,7 @@ func TestSchedule_Validate(t *testing.T) {
 		{
 			name:     "must_not_miss_interval_and_cron",
 			schedule: Schedule{},
-			err:      fmt.Errorf("must set schedule.interval or schedule.cron"),
+			err:      fmt.Errorf("must set invocation.interval or invocation.cron"),
 		},
 		{
 			name: "must_not_have_interval_and_cron",
@@ -34,7 +34,7 @@ func TestSchedule_Validate(t *testing.T) {
 				Interval: &h,
 				Cron:     &c,
 			},
-			err: fmt.Errorf("must set either schedule.interval or schedule.cro"),
+			err: fmt.Errorf("must set either invocation.interval or invocation.cro"),
 		},
 		{
 			name: "must_have_valid_strategy",

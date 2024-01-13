@@ -10,8 +10,8 @@ import (
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/collector/state"
+	"github.com/turbolytics/collector/internal/invocation"
 	"github.com/turbolytics/collector/internal/metrics"
-	"github.com/turbolytics/collector/internal/schedule"
 	scsql "github.com/turbolytics/collector/internal/sources/sql"
 	"go.uber.org/zap"
 	"io"
@@ -57,10 +57,11 @@ type config struct {
 }
 
 type Prometheus struct {
-	logger           *zap.Logger
-	config           config
-	stateStorer      state.Storer
-	scheduleStrategy schedule.TypeStrategy
+	logger             *zap.Logger
+	config             config
+	stateStorer        state.Storer
+	invocationStrategy invocation.TypeStrategy
+	collectorName      string
 }
 
 type apiMetric struct {
@@ -104,26 +105,7 @@ func (p *Prometheus) promMetrics(ctx context.Context, uri string) (*apiResponse,
 	return &apiResp, nil
 }
 
-func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
-	u, _ := url.Parse(p.config.url.String())
-	q := u.Query()
-	q.Add("query", p.config.Query)
-
-	if p.config.Time != nil {
-		qt, err := p.config.Time.Unix()
-		if err != nil {
-			return nil, err
-		}
-
-		q.Add("time", strconv.FormatInt(qt, 10))
-	}
-
-	u.RawQuery = q.Encode()
-
-	promMetrics, err := p.promMetrics(ctx, u.String())
-	if err != nil {
-		return nil, err
-	}
+func (p *Prometheus) applySQL(ctx context.Context, resp *apiResponse) ([]map[string]any, error) {
 
 	// initialize db and write all results to db, to expose sql interface
 	// over the data....
@@ -134,7 +116,7 @@ func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 		}
 
 		for _, qry := range bootQueries {
-			_, err = execer.ExecContext(context.TODO(), qry, nil)
+			_, err := execer.ExecContext(context.TODO(), qry, nil)
 			if err != nil {
 				return err
 			}
@@ -171,7 +153,7 @@ CREATE TABLE prom_metrics (
 	}
 	defer appender.Close()
 
-	for _, result := range promMetrics.Data.Result {
+	for _, result := range resp.Data.Result {
 		bs, err := json.Marshal(result.Metric)
 		if err != nil {
 			return nil, err
@@ -198,7 +180,35 @@ CREATE TABLE prom_metrics (
 
 	defer rows.Close()
 
-	results, err := scsql.RowsToMaps(rows)
+	return scsql.RowsToMaps(rows)
+}
+
+func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
+	// Get the last invocation
+	// Get each complete bucket of time since the last invocation
+	// Retrieve metrics for the bucket and then save
+	// lt, err := p.stateStorer.MostRecentInvocation()
+
+	u, _ := url.Parse(p.config.url.String())
+	q := u.Query()
+	q.Add("query", p.config.Query)
+
+	if p.config.Time != nil {
+		qt, err := p.config.Time.Unix()
+		if err != nil {
+			return nil, err
+		}
+
+		q.Add("time", strconv.FormatInt(qt, 10))
+	}
+
+	u.RawQuery = q.Encode()
+
+	promMetrics, err := p.promMetrics(ctx, u.String())
+	if err != nil {
+		return nil, err
+	}
+	results, err := p.applySQL(ctx, promMetrics)
 	if err != nil {
 		return nil, err
 	}
@@ -232,6 +242,14 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error)
 
 	for _, opt := range opts {
 		opt(p)
+	}
+
+	if p.invocationStrategy != invocation.TypeStrategyHistoricWindow {
+		return nil, fmt.Errorf(
+			"prometheus only supports %q strategy not: %q",
+			invocation.TypeStrategyHistoricWindow,
+			p.invocationStrategy,
+		)
 	}
 
 	return p, nil
