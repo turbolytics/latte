@@ -9,8 +9,6 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
-	"github.com/turbolytics/collector/internal/collector/state"
-	"github.com/turbolytics/collector/internal/invocation"
 	"github.com/turbolytics/collector/internal/metrics"
 	scsql "github.com/turbolytics/collector/internal/sources/sql"
 	"go.uber.org/zap"
@@ -57,11 +55,8 @@ type config struct {
 }
 
 type Prometheus struct {
-	logger             *zap.Logger
-	config             config
-	stateStorer        state.Storer
-	invocationStrategy invocation.TypeStrategy
-	collectorName      string
+	logger *zap.Logger
+	config config
 }
 
 type apiMetric struct {
@@ -183,6 +178,10 @@ CREATE TABLE prom_metrics (
 	return scsql.RowsToMaps(rows)
 }
 
+func (p *Prometheus) Window() *time.Duration {
+	return nil
+}
+
 func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	// Get the last invocation
 	// Get each complete bucket of time since the last invocation
@@ -242,14 +241,6 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error)
 
 	for _, opt := range opts {
 		opt(p)
-	}
-
-	if p.invocationStrategy != invocation.TypeStrategyHistoricWindow {
-		return nil, fmt.Errorf(
-			"prometheus only supports %q strategy not: %q",
-			invocation.TypeStrategyHistoricWindow,
-			p.invocationStrategy,
-		)
 	}
 
 	return p, nil

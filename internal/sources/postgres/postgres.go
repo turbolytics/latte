@@ -7,6 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/metrics"
 	scsql "github.com/turbolytics/collector/internal/sources/sql"
+	"time"
 )
 
 type config struct {
@@ -17,6 +18,10 @@ type config struct {
 type Postgres struct {
 	config config
 	db     *sql.DB
+}
+
+func (p *Postgres) Window() *time.Duration {
+	return nil
 }
 
 func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {

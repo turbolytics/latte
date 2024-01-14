@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/config"
@@ -78,7 +79,17 @@ func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error
 
 	}()
 
-	ms, err = c.Config.Source.Sourcer.Source(ctx)
+	// Collector supports multiple sourcing strategies.
+	// The simplest is "tick" strategy which just invokes
+	// the sourcer without any additional state necessary
+	switch c.Config.Source.Strategy {
+	case config.TypeSourceStrategyTick:
+		ms, err = c.Config.Source.Sourcer.Source(ctx)
+
+	default:
+		return nil, fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -167,6 +178,9 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 		zap.String("id", id.String()),
 		zap.String("name", c.Config.Name),
 	)
+
+	// check collector source strategy
+
 	ctx = context.WithValue(ctx, "id", id)
 	ms, err = c.Source(ctx)
 	if err != nil {

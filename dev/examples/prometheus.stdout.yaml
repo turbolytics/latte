@@ -1,6 +1,4 @@
 name: service_availability_5m
-invocation:
-  strategy: historic_window
 
 state_store:
   type: memory
@@ -17,6 +15,7 @@ schedule:
 
 source:
   type: prometheus
+  strategy: historic_window
   config:
     uri: 'http://{{ getEnvOrDefault "SC_PROM_HOST" "localhost" }}:9090/api/v1/query'
     query: 'sum by (result_status_code) (increase(collector_invoke_count_total[5m]))'

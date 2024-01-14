@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"time"
 )
 
 type config struct {
@@ -20,6 +21,10 @@ type config struct {
 type Mongo struct {
 	config config
 	client *mongo.Client
+}
+
+func (m *Mongo) Window() *time.Duration {
+	return nil
 }
 
 func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
