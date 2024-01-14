@@ -76,7 +76,7 @@ func WithLogger(l *zap.Logger) Option {
 
 // initSource initializes the correct source.
 func initSource(c *Config) error {
-	var s sources.Sourcer
+	var s sources.MetricSourcer
 	var err error
 	switch c.Source.Type {
 	case sources.TypePostgres:

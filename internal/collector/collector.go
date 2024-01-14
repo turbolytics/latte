@@ -9,6 +9,7 @@ import (
 	"github.com/turbolytics/collector/internal/config"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/obs"
+	"github.com/turbolytics/collector/internal/timeseries"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -79,17 +80,7 @@ func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error
 
 	}()
 
-	// Collector supports multiple sourcing strategies.
-	// The simplest is "tick" strategy which just invokes
-	// the sourcer without any additional state necessary
-	switch c.Config.Source.Strategy {
-	case config.TypeSourceStrategyTick:
-		ms, err = c.Config.Source.Sourcer.Source(ctx)
-
-	default:
-		return nil, fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
-	}
-
+	ms, err = c.Config.Source.Sourcer.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +133,69 @@ func (c *Collector) InvokeHandleError(ctx context.Context) {
 	}
 }
 
+func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
+	ms, err := c.Source(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// only sink if metrics are present:
+	if len(ms) == 0 {
+		c.logger.Warn(
+			"collector.Invoke",
+			zap.String("msg", "no metrics found"),
+			zap.String("id", id.String()),
+			zap.String("name", c.Config.Name),
+		)
+		return ms, err
+	}
+
+	if err = c.Transform(ms); err != nil {
+		return ms, err
+	}
+
+	if err = c.Sink(ctx, ms); err != nil {
+		return ms, err
+	}
+
+	return ms, err
+}
+
+// invokeWindow uses the state store to check if a full window has elapsed.
+// invokeWindow will only source data when a full window has elapsed.
+func (c *Collector) invokeWindow(ctx context.Context) ([]*metrics.Metric, error) {
+	// TODO invokeWindow should handle gaps in windows.
+	i, err := c.stateStorer.MostRecentInvocation(c.Config.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	if i != nil {
+
+	}
+
+	// no previous invocations exist, just perform the current collection
+	// and save.
+	if i == nil {
+		ct := time.Now().UTC()
+		d := c.Config.Source.Sourcer.Window()
+		window := timeseries.BucketFromTime(
+			ct,
+			*d,
+		)
+		if ct.Before(window.End) {
+			// the end of the window has not completed.
+		}
+		// get start of window and end of window
+	}
+
+	// a previous invocation exists, check to see if a single window has passed
+
+	// if multiple windows have passed, error for right now.
+
+	return nil, nil
+}
+
 func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
 	start := time.Now().UTC()
 
@@ -178,32 +232,20 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 		zap.String("id", id.String()),
 		zap.String("name", c.Config.Name),
 	)
-
-	// check collector source strategy
-
 	ctx = context.WithValue(ctx, "id", id)
-	ms, err = c.Source(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	// only sink if metrics are present:
-	if len(ms) == 0 {
-		c.logger.Warn(
-			"collector.Invoke",
-			zap.String("msg", "no metrics found"),
-			zap.String("id", id.String()),
-			zap.String("name", c.Config.Name),
-		)
-		return ms, err
-	}
-
-	if err = c.Transform(ms); err != nil {
-		return ms, err
-	}
-
-	if err = c.Sink(ctx, ms); err != nil {
-		return ms, err
+	// Collector supports multiple sourcing strategies.
+	// The simplest is "tick" strategy which just invokes
+	// the sourcer without any additional state necessary
+	// The windowing strategy may result in multiple source
+	// invocations for each window that needs to be executed.
+	switch c.Config.Source.Strategy {
+	case config.TypeSourceStrategyTick:
+		ms, err = c.invokeTick(ctx, id)
+	case config.TypeSourceStrategyWindow:
+		ms, err = c.invokeWindow(ctx)
+	default:
+		return nil, fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
 	}
 
 	return ms, err

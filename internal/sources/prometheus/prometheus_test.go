@@ -15,28 +15,28 @@ import (
 
 func TestPrometheus_timeDurationConfig(t *testing.T) {
 	testCases := []struct {
-		name    string
-		startOf time.Duration
-		err     error
-		epoch   int64
+		name   string
+		window time.Duration
+		err    error
+		epoch  int64
 	}{
 		{
-			name:    "day_success",
-			startOf: time.Hour * 24,
-			err:     nil,
-			epoch:   1704067200,
+			name:   "day_success",
+			window: time.Hour * 24,
+			err:    nil,
+			epoch:  1704067200,
 		},
 		{
-			name:    "minute_success",
-			startOf: time.Minute,
-			err:     nil,
-			epoch:   1704071400,
+			name:   "minute_success",
+			window: time.Minute,
+			err:    nil,
+			epoch:  1704071400,
 		},
 		{
-			name:    "five_minute_success",
-			startOf: time.Minute * 5,
-			err:     nil,
-			epoch:   1704071400,
+			name:   "five_minute_success",
+			window: time.Minute * 5,
+			err:    nil,
+			epoch:  1704071400,
 		},
 	}
 
@@ -45,7 +45,7 @@ func TestPrometheus_timeDurationConfig(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tw := timeWindowConfig{
-				startOfWindow: tc.startOf,
+				window: tc.window,
 				nowFn: func() time.Time {
 					return ct
 				},

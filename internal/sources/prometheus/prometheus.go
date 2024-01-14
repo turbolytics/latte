@@ -24,8 +24,8 @@ type timeWindowConfig struct {
 
 	// mapstructure does not parse to native go types
 	// maybe there is a way to implement an unmarshaller
-	startOfWindow time.Duration
-	nowFn         func() time.Time
+	window time.Duration
+	nowFn  func() time.Time
 }
 
 func (tw *timeWindowConfig) init() error {
@@ -36,13 +36,13 @@ func (tw *timeWindowConfig) init() error {
 	if err != nil {
 		return err
 	}
-	tw.startOfWindow = d
+	tw.window = d
 	return nil
 }
 
 func (tw timeWindowConfig) Unix() (int64, error) {
 	ct := tw.nowFn()
-	return ct.Truncate(tw.startOfWindow).Unix(), nil
+	return ct.Truncate(tw.window).Unix(), nil
 }
 
 type config struct {

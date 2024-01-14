@@ -14,7 +14,13 @@ const (
 	TypePrometheus Type = "prometheus"
 )
 
-type Sourcer interface {
+type MetricSourcer interface {
 	Source(ctx context.Context) ([]*metrics.Metric, error)
 	Window() *time.Duration
 }
+
+/*
+type EntitySourcer interface {
+	Source(ctx context.Context) ([]interface{}, error)
+}
+*/

@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/turbolytics/collector/internal/timeseries"
 	"time"
 )
 
@@ -11,9 +12,9 @@ const (
 )
 
 type Invocation struct {
-	CollectorName  string
-	WindowDatetime time.Time
-	Time           time.Time
+	CollectorName string
+	Time          time.Time
+	Window        *timeseries.Bucket
 }
 
 type Storer interface {

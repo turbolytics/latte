@@ -8,21 +8,21 @@ import (
 type TypeSourceStrategy string
 
 const (
-	TypeSourceStrategyHistoricWindow TypeSourceStrategy = "historic_window"
-	TypeSourceStrategyTick           TypeSourceStrategy = "tick"
+	TypeSourceStrategyWindow TypeSourceStrategy = "window"
+	TypeSourceStrategyTick   TypeSourceStrategy = "tick"
 )
 
 type Source struct {
 	Type     sources.Type
 	Strategy TypeSourceStrategy
-	Sourcer  sources.Sourcer
+	Sourcer  sources.MetricSourcer
 	Config   map[string]any
 }
 
 func (s Source) Validate() error {
 	vs := map[TypeSourceStrategy]struct{}{
-		TypeSourceStrategyTick:           {},
-		TypeSourceStrategyHistoricWindow: {},
+		TypeSourceStrategyTick:   {},
+		TypeSourceStrategyWindow: {},
 	}
 
 	if _, ok := vs[s.Strategy]; !ok {
