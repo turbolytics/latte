@@ -7,6 +7,44 @@ import (
 	"time"
 )
 
+func TestLastCompleteBucket(t *testing.T) {
+	testCases := []struct {
+		name           string
+		ct             time.Time
+		d              time.Duration
+		expectedBucket Bucket
+	}{
+		{
+			name: "start_before_end_bucket_aligned",
+			ct:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+			d:    time.Hour * 24,
+			expectedBucket: Bucket{
+				Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			name: "start_before_end_bucket_over_end",
+			ct:   time.Date(2024, 1, 2, 1, 15, 0, 0, time.UTC),
+			d:    time.Hour * 24,
+			expectedBucket: Bucket{
+				Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			bucket := LastCompleteBucket(
+				tc.ct,
+				tc.d,
+			)
+			assert.Equal(t, tc.expectedBucket, bucket)
+		})
+	}
+}
+
 func TestTimeBuckets(t *testing.T) {
 	testCases := []struct {
 		name    string

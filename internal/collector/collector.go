@@ -20,10 +20,10 @@ import (
 var meter = otel.Meter("signals-collector")
 
 type Collector struct {
-	logger      *zap.Logger
-	stateStorer state.Storer
-
 	Config *config.Config
+
+	logger *zap.Logger
+	now    func() time.Time
 }
 
 func (c *Collector) Close() error {
@@ -163,37 +163,75 @@ func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Me
 
 // invokeWindow uses the state store to check if a full window has elapsed.
 // invokeWindow will only source data when a full window has elapsed.
-func (c *Collector) invokeWindow(ctx context.Context) ([]*metrics.Metric, error) {
+// TODO - What happens when a window is changed in the config?
+func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
+	var ms []*metrics.Metric
+	var err error
 	// TODO invokeWindow should handle gaps in windows.
-	i, err := c.stateStorer.MostRecentInvocation(c.Config.Name)
+	i, err := c.Config.StateStore.Storer.MostRecentInvocation(c.Config.Name)
 	if err != nil {
 		return nil, err
-	}
-
-	if i != nil {
-
 	}
 
 	// no previous invocations exist, just perform the current collection
 	// and save.
 	if i == nil {
-		ct := time.Now().UTC()
-		d := c.Config.Source.Sourcer.Window()
-		window := timeseries.BucketFromTime(
-			ct,
-			*d,
+		// get the current completed window
+		window := timeseries.LastCompleteBucket(
+			c.now(),
+			*(c.Config.Source.Sourcer.Window()),
 		)
-		if ct.Before(window.End) {
-			// the end of the window has not completed.
-		}
+		c.logger.Info(
+			"collector.invokeWindow",
+			zap.String("msg", "invoking for window"),
+			zap.String("window.start", window.Start.String()),
+			zap.String("window.end", window.End.String()),
+			zap.String("id", id.String()),
+			zap.String("name", c.Config.Name),
+		)
+
+		// it is passed the window, collect data for the window
 		// get start of window and end of window
+		ctx = context.WithValue(ctx, "window.start", window.Start)
+		ctx = context.WithValue(ctx, "window.end", window.End)
+		ms, err = c.Source(ctx)
+		if err := c.Config.StateStore.Storer.SaveInvocation(&state.Invocation{
+			CollectorName: c.Config.Name,
+			Time:          c.now(),
+			Window:        &window,
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		// a previous invocation exists.
+		// Get all buckets that have passed since invocation end
+		windows, err := timeseries.TimeBuckets(
+			i.Window.End,
+			c.now(),
+			*(c.Config.Source.Sourcer.Window()),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(windows) > 1 {
+			c.logger.Error(
+				"collector.invokeWindow",
+				zap.String("msg", "multiple windows detected"),
+				zap.Int("windows", len(windows)),
+				zap.String("id", id.String()),
+				zap.String("name", c.Config.Name),
+			)
+			return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
+		}
+		window := windows[0]
+		// a single window has passed, collect data for that window
+		ctx = context.WithValue(ctx, "window.start", window.Start)
+		ctx = context.WithValue(ctx, "window.end", window.End)
+		ms, err = c.Source(ctx)
 	}
 
-	// a previous invocation exists, check to see if a single window has passed
-
-	// if multiple windows have passed, error for right now.
-
-	return nil, nil
+	return ms, err
 }
 
 func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
@@ -243,7 +281,7 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 	case config.TypeSourceStrategyTick:
 		ms, err = c.invokeTick(ctx, id)
 	case config.TypeSourceStrategyWindow:
-		ms, err = c.invokeWindow(ctx)
+		ms, err = c.invokeWindow(ctx, id)
 	default:
 		return nil, fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
 	}
@@ -262,6 +300,9 @@ func WithLogger(l *zap.Logger) Option {
 func New(config *config.Config, opts ...Option) (*Collector, error) {
 	c := &Collector{
 		Config: config,
+		now: func() time.Time {
+			return time.Now().UTC()
+		},
 	}
 	for _, opt := range opts {
 		opt(c)

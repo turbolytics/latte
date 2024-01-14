@@ -2,11 +2,17 @@ package collector
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/turbolytics/collector/internal/collector/state"
+	"github.com/turbolytics/collector/internal/collector/state/memory"
 	"github.com/turbolytics/collector/internal/config"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sources"
+	"github.com/turbolytics/collector/internal/timeseries"
+	"go.uber.org/zap"
 	"testing"
+	"time"
 )
 
 func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
@@ -54,7 +60,7 @@ func TestCollector_Close(t *testing.T) {
 	assert.Equal(t, 2, ts.closes)
 }
 
-func TestCollector_Source_Tick_ValidMetrics(t *testing.T) {
+func TestCollector_Source_ValidMetrics(t *testing.T) {
 	expectedMetrics := []*metrics.Metric{
 		{
 			Name: "test.metric",
@@ -78,28 +84,64 @@ func TestCollector_Source_Tick_ValidMetrics(t *testing.T) {
 	assert.Equal(t, expectedMetrics, ms)
 }
 
-/*
-func TestCollector_Source_HistoricWindow_NoPrevious_ValidMetrics(t *testing.T) {
+func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 	expectedMetrics := []*metrics.Metric{
 		{
 			Name: "test.metric",
 		},
 	}
 
+	now := time.Date(2024, 1, 1, 1, 1, 0, 0, time.UTC)
+
 	ts := &sources.TestSourcer{
-		Ms: expectedMetrics,
+		Ms:             expectedMetrics,
+		WindowDuration: time.Minute,
 	}
+	ss, _ := memory.NewFromGenericConfig(map[string]any{})
 
 	coll := &Collector{
+		logger: zap.NewNop(),
+		now: func() time.Time {
+			return now
+		},
 		Config: &config.Config{
+			Name: "test_collector",
+			StateStore: config.StateStore{
+				Storer: ss,
+			},
 			Source: config.Source{
 				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyHistoricWindow,
+				Strategy: config.TypeSourceStrategyWindow,
 			},
 		},
 	}
-	ms, err := coll.Source(context.Background())
+	ms, err := coll.invokeWindow(
+		context.Background(),
+		uuid.New(),
+	)
+
 	assert.NoError(t, err)
 	assert.Equal(t, expectedMetrics, ms)
+	assert.Equal(t, 1, len(ts.SourceCalls))
+
+	callCtx := ts.SourceCalls[0]
+	assert.Equal(t,
+		time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
+		callCtx.Value("window.start").(time.Time),
+	)
+	assert.Equal(t,
+		time.Date(2024, 1, 1, 1, 1, 0, 0, time.UTC),
+		callCtx.Value("window.end").(time.Time),
+	)
+
+	i, err := ss.MostRecentInvocation(coll.Config.Name)
+	assert.NoError(t, err)
+	assert.Equal(t, &state.Invocation{
+		CollectorName: "test_collector",
+		Time:          now,
+		Window: &timeseries.Bucket{
+			Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 1, 1, 1, 1, 0, 0, time.UTC),
+		},
+	}, i)
 }
-*/

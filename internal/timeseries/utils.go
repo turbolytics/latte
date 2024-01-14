@@ -42,6 +42,13 @@ func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, err
 	return buckets, nil
 }
 
+func LastCompleteBucket(ct time.Time, d time.Duration) Bucket {
+	b := Bucket{}
+	b.End = ct.Truncate(d)
+	b.Start = b.End.Add(-d)
+	return b
+}
+
 // BucketFromTime generates a range based on the time provided
 // and the duration provided.
 func BucketFromTime(ct time.Time, d time.Duration) Bucket {

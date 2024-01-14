@@ -25,24 +25,15 @@ type timeWindowConfig struct {
 	// mapstructure does not parse to native go types
 	// maybe there is a way to implement an unmarshaller
 	window time.Duration
-	nowFn  func() time.Time
 }
 
 func (tw *timeWindowConfig) init() error {
-	tw.nowFn = func() time.Time {
-		return time.Now().UTC()
-	}
 	d, err := time.ParseDuration(tw.Window)
 	if err != nil {
 		return err
 	}
 	tw.window = d
 	return nil
-}
-
-func (tw timeWindowConfig) Unix() (int64, error) {
-	ct := tw.nowFn()
-	return ct.Truncate(tw.window).Unix(), nil
 }
 
 type config struct {
@@ -179,27 +170,17 @@ CREATE TABLE prom_metrics (
 }
 
 func (p *Prometheus) Window() *time.Duration {
-	return nil
+	return &p.config.Time.window
 }
 
 func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
-	// Get the last invocation
-	// Get each complete bucket of time since the last invocation
-	// Retrieve metrics for the bucket and then save
-	// lt, err := p.stateStorer.MostRecentInvocation()
+	// This is already starting to devolve :sweat:
+	windowEnd := ctx.Value("window.end").(time.Time)
 
 	u, _ := url.Parse(p.config.url.String())
 	q := u.Query()
 	q.Add("query", p.config.Query)
-
-	if p.config.Time != nil {
-		qt, err := p.config.Time.Unix()
-		if err != nil {
-			return nil, err
-		}
-
-		q.Add("time", strconv.FormatInt(qt, 10))
-	}
+	q.Add("time", strconv.FormatInt(windowEnd.Unix(), 10))
 
 	u.RawQuery = q.Encode()
 
