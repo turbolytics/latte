@@ -145,3 +145,47 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		},
 	}, i)
 }
+
+func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *testing.T) {
+	now := time.Date(2024, 1, 1, 4, 1, 0, 0, time.UTC)
+
+	ts := &sources.TestSourcer{
+		WindowDuration: time.Hour,
+	}
+	ss, _ := memory.NewFromGenericConfig(map[string]any{})
+	ss.SaveInvocation(&state.Invocation{
+		CollectorName: "test_collector",
+		Window: &timeseries.Bucket{
+			Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 1, 1, 2, 0, 0, 0, time.UTC),
+		},
+	})
+
+	coll := &Collector{
+		logger: zap.NewNop(),
+		now: func() time.Time {
+			return now
+		},
+		Config: &config.Config{
+			Name: "test_collector",
+			StateStore: config.StateStore{
+				Storer: ss,
+			},
+			Source: config.Source{
+				Sourcer:  ts,
+				Strategy: config.TypeSourceStrategyWindow,
+			},
+		},
+	}
+	ms, err := coll.invokeWindow(
+		context.Background(),
+		uuid.New(),
+	)
+
+	assert.EqualError(t, err, "backfilling multiple windows not yet supported: [{2024-01-01 02:00:00 +0000 UTC 2024-01-01 03:00:00 +0000 UTC} {2024-01-01 03:00:00 +0000 UTC 2024-01-01 04:00:00 +0000 UTC}]")
+	assert.Nil(t, ms)
+}
+
+func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testing.T) {
+	t.Fail()
+}

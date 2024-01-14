@@ -205,6 +205,8 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	} else {
 		// a previous invocation exists.
 		// Get all buckets that have passed since invocation end
+
+		// truncating the current time to the duration....
 		windows, err := timeseries.TimeBuckets(
 			i.Window.End,
 			c.now(),
