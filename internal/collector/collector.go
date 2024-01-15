@@ -226,7 +226,10 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 			return nil, err
 		}
 
-		if len(windows) > 1 {
+		// if no window has passed return and wait
+		if len(windows) == 0 {
+			return nil, nil
+		} else if len(windows) > 1 {
 			c.logger.Error(
 				"collector.invokeWindow",
 				zap.String("msg", "multiple windows detected"),

@@ -37,10 +37,12 @@ func TestNewConfigFromFile(t *testing.T) {
 	}
 }
 
-func TestNewConfigsFromDir(t *testing.T) {
-	_, err := NewFromDir(
-		exampleDir,
+func TestNewConfigsFromGlob(t *testing.T) {
+	glob := path.Join(exampleDir, "*.yaml")
+	cs, err := NewFromGlob(
+		glob,
 		WithJustValidation(true),
 	)
 	assert.NoError(t, err)
+	assert.Equal(t, 6, len(cs))
 }

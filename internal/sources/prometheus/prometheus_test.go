@@ -126,7 +126,9 @@ FROM
 		},
 	}
 
+	start := time.Date(2024, 1, 1, 1, 1, 1, 0, time.UTC)
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, "window.start", start)
 	ctx = context.WithValue(ctx, "window.end", time.Now().UTC())
 
 	ms, err := p.Source(ctx)
@@ -139,42 +141,48 @@ FROM
 
 	assert.Equal(t, []*metrics.Metric{
 		{
-			Value: 8555,
+			Window: &start,
+			Value:  8555,
 			Tags: map[string]string{
 				"collector_name": "mongo.users.10s",
 				"error":          "false",
 			},
 		},
 		{
-			Value: 1473,
+			Window: &start,
+			Value:  1473,
 			Tags: map[string]string{
 				"collector_name": "postgres.users.total.1m",
 				"error":          "false",
 			},
 		},
 		{
-			Value: 0,
+			Window: &start,
+			Value:  0,
 			Tags: map[string]string{
 				"collector_name": "postgres.users.total.24h",
 				"error":          "true",
 			},
 		},
 		{
-			Value: 1,
+			Window: &start,
+			Value:  1,
 			Tags: map[string]string{
 				"collector_name": "postgres.users.total.24h",
 				"error":          "false",
 			},
 		},
 		{
-			Value: 0,
+			Window: &start,
+			Value:  0,
 			Tags: map[string]string{
 				"collector_name": "postgres.users.total.30s",
 				"error":          "true",
 			},
 		},
 		{
-			Value: 2941,
+			Window: &start,
+			Value:  2941,
 			Tags: map[string]string{
 				"collector_name": "postgres.users.total.30s",
 				"error":          "false",

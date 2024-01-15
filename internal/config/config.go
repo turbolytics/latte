@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path"
+	"path/filepath"
 	"text/template"
 )
 
@@ -174,20 +174,15 @@ func parseTemplate(bs []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func NewFromDir(dirname string, opts ...Option) ([]*Config, error) {
-	files, err := os.ReadDir(dirname)
+func NewFromGlob(glob string, opts ...Option) ([]*Config, error) {
+	files, err := filepath.Glob(glob)
 	if err != nil {
 		return nil, err
 	}
 	var configs []*Config
 
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-
-		n := path.Join(dirname, f.Name())
-		c, err := NewFromFile(n, opts...)
+	for _, fName := range files {
+		c, err := NewFromFile(fName, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -218,6 +213,7 @@ func validate(c Config) error {
 }
 
 func NewFromFile(name string, opts ...Option) (*Config, error) {
+	fmt.Printf("loading config from file: %q\n", name)
 	bs, err := os.ReadFile(name)
 	if err != nil {
 		return nil, err

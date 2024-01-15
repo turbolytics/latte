@@ -175,6 +175,7 @@ func (p *Prometheus) Window() *time.Duration {
 
 func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	// This is already starting to devolve :sweat:
+	windowStart := ctx.Value("window.start").(time.Time)
 	windowEnd := ctx.Value("window.end").(time.Time)
 
 	u, _ := url.Parse(p.config.url.String())
@@ -194,6 +195,11 @@ func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	}
 
 	ms, err := metrics.MapsToMetrics(results)
+	if err == nil {
+		for _, m := range ms {
+			m.Window = &windowStart
+		}
+	}
 	return ms, err
 }
 

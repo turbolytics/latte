@@ -14,7 +14,7 @@ import (
 )
 
 func NewRunCmd() *cobra.Command {
-	var configDir string
+	var configsGlob string
 	var otelExporter string
 
 	var runCmd = &cobra.Command{
@@ -56,12 +56,12 @@ func NewRunCmd() *cobra.Command {
 
 			logger.Info(
 				"loading configs",
-				zap.String("path", configDir),
+				zap.String("path", configsGlob),
 			)
 
 			// initialize all collectors in the path
-			confs, err := config.NewFromDir(
-				configDir,
+			confs, err := config.NewFromGlob(
+				configsGlob,
 				config.WithLogger(logger),
 			)
 			if err != nil {
@@ -99,7 +99,7 @@ func NewRunCmd() *cobra.Command {
 		},
 	}
 
-	runCmd.Flags().StringVarP(&configDir, "config-dir", "c", "", "Path to config directory")
+	runCmd.Flags().StringVarP(&configsGlob, "configs", "c", "", "Path to config directory")
 	runCmd.Flags().StringVarP(&otelExporter, "otel-exporter", "", "prometheus", "Opentelemetry exporter: 'console', prometheus")
 	runCmd.MarkFlagRequired("config")
 
