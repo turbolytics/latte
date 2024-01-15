@@ -4,7 +4,7 @@ Prometheus is a timeseries data store for operational telemetry. Prometheus is u
 
 This tutorial shows how signals collector is used to capture prometheus SLO data for long term storage in a datalake or datawarehouse.
 
-<img width="658" alt="Screenshot 2024-01-04 at 4 55 19 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/8ac50eb9-afba-47e6-8f3e-96eb2343d44a">
+<img width="713" alt="Screenshot 2024-01-07 at 1 01 52 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/c8d9f6fe-8a31-42c9-85a1-00001f2fb3c4">
 
 The signals collector will:
 
@@ -22,7 +22,7 @@ The signals collector will:
 
 The first step is to determine the prometheus query that will produce the correct daily aggregate data. Prometheus ships with a web frontend that supports querying underlying prometheus data.
 
-<img width="900" alt="Screenshot 2024-01-03 at 8 34 16 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/4dc765d3-f297-4a11-8c82-d47a3caabc75">
+<img width="1512" alt="Screenshot 2024-01-15 at 2 18 45 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/51f3e14a-8aa8-4816-9f2c-6cde43fd8756">
 
 [Test the query directly against the API to see the response returned](https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries):
 

@@ -19,19 +19,28 @@ import (
 	"time"
 )
 
-type Option func(*Prometheus)
+type timeWindowConfig struct {
+	Window string `mapstructure:"window"`
 
-func WithLogger(l *zap.Logger) Option {
-	return func(p *Prometheus) {
-		p.logger = l
+	// mapstructure does not parse to native go types
+	// maybe there is a way to implement an unmarshaller
+	window time.Duration
+}
+
+func (tw *timeWindowConfig) init() error {
+	d, err := time.ParseDuration(tw.Window)
+	if err != nil {
+		return err
 	}
+	tw.window = d
+	return nil
 }
 
 type config struct {
-	SQL            string
-	Query          string
-	URI            string
-	TimeExpression string `mapstructure:"time_expression"`
+	SQL   string
+	Query string
+	URI   string
+	Time  *timeWindowConfig
 
 	url *url.URL
 }
@@ -82,37 +91,7 @@ func (p *Prometheus) promMetrics(ctx context.Context, uri string) (*apiResponse,
 	return &apiResp, nil
 }
 
-func queryTimeUnix(qTime string) (int64, error) {
-	switch qTime {
-	case "$start_of_day":
-		ct := time.Now().UTC()
-		startOfDay := time.Date(ct.Year(), ct.Month(), ct.Day(), 0, 0, 0, 0, ct.Location())
-		return startOfDay.Unix(), nil
-	}
-	return 0, fmt.Errorf("query time %q not supported, currently supports($start_of_day)", qTime)
-}
-
-func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
-	u, _ := url.Parse(p.config.url.String())
-	q := u.Query()
-	q.Add("query", p.config.Query)
-
-	if p.config.TimeExpression != "" {
-		qt, err := queryTimeUnix(p.config.TimeExpression)
-		if err != nil {
-			return nil, err
-		}
-
-		q.Add("time", strconv.FormatInt(qt, 10))
-	}
-
-	u.RawQuery = q.Encode()
-	fmt.Println(u.String())
-
-	promMetrics, err := p.promMetrics(ctx, u.String())
-	if err != nil {
-		return nil, err
-	}
+func (p *Prometheus) applySQL(ctx context.Context, resp *apiResponse) ([]map[string]any, error) {
 
 	// initialize db and write all results to db, to expose sql interface
 	// over the data....
@@ -123,7 +102,7 @@ func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 		}
 
 		for _, qry := range bootQueries {
-			_, err = execer.ExecContext(context.TODO(), qry, nil)
+			_, err := execer.ExecContext(context.TODO(), qry, nil)
 			if err != nil {
 				return err
 			}
@@ -160,7 +139,7 @@ CREATE TABLE prom_metrics (
 	}
 	defer appender.Close()
 
-	for _, result := range promMetrics.Data.Result {
+	for _, result := range resp.Data.Result {
 		bs, err := json.Marshal(result.Metric)
 		if err != nil {
 			return nil, err
@@ -187,12 +166,40 @@ CREATE TABLE prom_metrics (
 
 	defer rows.Close()
 
-	results, err := scsql.RowsToMaps(rows)
+	return scsql.RowsToMaps(rows)
+}
+
+func (p *Prometheus) Window() *time.Duration {
+	return &p.config.Time.window
+}
+
+func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
+	// This is already starting to devolve :sweat:
+	windowStart := ctx.Value("window.start").(time.Time)
+	windowEnd := ctx.Value("window.end").(time.Time)
+
+	u, _ := url.Parse(p.config.url.String())
+	q := u.Query()
+	q.Add("query", p.config.Query)
+	q.Add("time", strconv.FormatInt(windowEnd.Unix(), 10))
+
+	u.RawQuery = q.Encode()
+
+	promMetrics, err := p.promMetrics(ctx, u.String())
+	if err != nil {
+		return nil, err
+	}
+	results, err := p.applySQL(ctx, promMetrics)
 	if err != nil {
 		return nil, err
 	}
 
 	ms, err := metrics.MapsToMetrics(results)
+	if err == nil {
+		for _, m := range ms {
+			m.Window = &windowStart
+		}
+	}
 	return ms, err
 }
 
@@ -208,6 +215,12 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error)
 		return nil, err
 	}
 	conf.url = u
+
+	if conf.Time != nil {
+		if err := conf.Time.init(); err != nil {
+			return nil, err
+		}
+	}
 
 	p := &Prometheus{
 		config: conf,

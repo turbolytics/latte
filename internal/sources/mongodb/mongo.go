@@ -2,13 +2,13 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/collector/internal/metrics"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"time"
 )
 
 type config struct {
@@ -21,6 +21,10 @@ type config struct {
 type Mongo struct {
 	config config
 	client *mongo.Client
+}
+
+func (m *Mongo) Window() *time.Duration {
+	return nil
 }
 
 func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
@@ -43,7 +47,6 @@ func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
 		return nil, err
 	}
 
-	fmt.Println(results)
 	var rs []map[string]any
 	for _, r := range results {
 		rs = append(rs, r)

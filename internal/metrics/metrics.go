@@ -17,19 +17,16 @@ const (
 type MetricOption func(metric *Metric)
 
 type Metric struct {
-	UUID          string            `json:"uuid"`
-	Name          string            `json:"name"`
-	Value         float64           `json:"value"`
-	Type          Type              `json:"type"`
-	Tags          map[string]string `json:"tags"`
-	Timestamp     time.Time         `json:"timestamp"`
-	GrainDatetime time.Time         `json:"grain_datetime"`
-}
+	UUID      string            `json:"uuid"`
+	Name      string            `json:"name"`
+	Value     float64           `json:"value"`
+	Type      Type              `json:"type"`
+	Tags      map[string]string `json:"tags"`
+	Timestamp time.Time         `json:"timestamp"`
 
-func WithUUID(id string) MetricOption {
-	return func(m *Metric) {
-		m.UUID = id
-	}
+	// For 'tick' collectors, this time aligns with the `Timestamp`.
+	// For `window` collectors, this time represents the windowing being collected.
+	Window *time.Time `json:"window"`
 }
 
 func New(opts ...MetricOption) Metric {

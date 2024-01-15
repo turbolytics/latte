@@ -3,10 +3,13 @@ package collector
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
-	"github.com/turbolytics/collector/internal"
+	"github.com/turbolytics/collector/internal/collector/state"
+	"github.com/turbolytics/collector/internal/config"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/obs"
+	"github.com/turbolytics/collector/internal/timeseries"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -17,8 +20,10 @@ import (
 var meter = otel.Meter("signals-collector")
 
 type Collector struct {
+	Config *config.Config
+
 	logger *zap.Logger
-	Config *internal.Config
+	now    func() time.Time
 }
 
 func (c *Collector) Close() error {
@@ -28,13 +33,10 @@ func (c *Collector) Close() error {
 	return nil
 }
 
-func (c *Collector) Transform(t time.Time, ms []*metrics.Metric) error {
-	grainDatetime := t.Truncate(*c.Config.Metric.Grain)
-
+func (c *Collector) Transform(ms []*metrics.Metric) error {
 	for _, m := range ms {
 		m.Name = c.Config.Metric.Name
 		m.Type = c.Config.Metric.Type
-		m.GrainDatetime = grainDatetime
 
 		// enrich with tags
 		// should these be copied?
@@ -131,6 +133,127 @@ func (c *Collector) InvokeHandleError(ctx context.Context) {
 	}
 }
 
+func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
+	ms, err := c.Source(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// only sink if metrics are present:
+	if len(ms) == 0 {
+		c.logger.Warn(
+			"collector.Invoke",
+			zap.String("msg", "no metrics found"),
+			zap.String("id", id.String()),
+			zap.String("name", c.Config.Name),
+		)
+		return ms, err
+	}
+
+	if err = c.Transform(ms); err != nil {
+		return ms, err
+	}
+
+	if err = c.Sink(ctx, ms); err != nil {
+		return ms, err
+	}
+
+	return ms, err
+}
+
+func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Bucket) ([]*metrics.Metric, error) {
+	c.logger.Info(
+		"collector.invokeWindow",
+		zap.String("msg", "invoking for window"),
+		zap.String("window.start", window.Start.String()),
+		zap.String("window.end", window.End.String()),
+		zap.String("id", id.String()),
+		zap.String("name", c.Config.Name),
+	)
+
+	// it is passed the window, collect data for the window
+	// get start of window and end of window
+	ctx = context.WithValue(ctx, "window.start", window.Start)
+	ctx = context.WithValue(ctx, "window.end", window.End)
+	ms, err := c.Source(ctx)
+	if err != nil {
+		return ms, err
+	}
+
+	err = c.Config.StateStore.Storer.SaveInvocation(&state.Invocation{
+		CollectorName: c.Config.Name,
+		Time:          c.now(),
+		Window:        &window,
+	})
+	return ms, err
+}
+
+// invokeWindow uses the state store to check if a full window has elapsed.
+// invokeWindow will only source data when a full window has elapsed.
+// TODO - What happens when a window is changed in the config?
+func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
+	var ms []*metrics.Metric
+	var err error
+	// TODO invokeWindow should handle gaps in windows.
+	i, err := c.Config.StateStore.Storer.MostRecentInvocation(
+		ctx,
+		c.Config.Name,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// no previous invocations exist, just perform the current collection
+	// and save.
+	if i == nil {
+		// get the current completed window
+		window := timeseries.LastCompleteBucket(
+			c.now(),
+			*(c.Config.Source.Sourcer.Window()),
+		)
+		ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
+	} else {
+		// a previous invocation exists.
+		// Get all buckets that have passed since invocation end
+
+		// truncating the current time to the duration....
+		windows, err := timeseries.TimeBuckets(
+			i.Window.End,
+			c.now(),
+			*(c.Config.Source.Sourcer.Window()),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// if no window has passed return and wait
+		if len(windows) == 0 {
+			return nil, nil
+		} else if len(windows) > 1 {
+			c.logger.Error(
+				"collector.invokeWindow",
+				zap.String("msg", "multiple windows detected"),
+				zap.Int("windows", len(windows)),
+				zap.String("id", id.String()),
+				zap.String("name", c.Config.Name),
+			)
+			return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
+		}
+		window := windows[0]
+		ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
+	}
+
+	if err = c.Transform(ms); err != nil {
+		return ms, err
+	}
+
+	if err = c.Sink(ctx, ms); err != nil {
+		return ms, err
+	}
+
+	return ms, err
+}
+
 func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
 	start := time.Now().UTC()
 
@@ -168,28 +291,19 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 		zap.String("name", c.Config.Name),
 	)
 	ctx = context.WithValue(ctx, "id", id)
-	ms, err = c.Source(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	// only sink if metrics are present:
-	if len(ms) == 0 {
-		c.logger.Warn(
-			"collector.Invoke",
-			zap.String("msg", "no metrics found"),
-			zap.String("id", id.String()),
-			zap.String("name", c.Config.Name),
-		)
-		return ms, err
-	}
-
-	if err = c.Transform(start, ms); err != nil {
-		return ms, err
-	}
-
-	if err = c.Sink(ctx, ms); err != nil {
-		return ms, err
+	// Collector supports multiple sourcing strategies.
+	// The simplest is "tick" strategy which just invokes
+	// the sourcer without any additional state necessary
+	// The windowing strategy may result in multiple source
+	// invocations for each window that needs to be executed.
+	switch c.Config.Source.Strategy {
+	case config.TypeSourceStrategyTick:
+		ms, err = c.invokeTick(ctx, id)
+	case config.TypeSourceStrategyWindow:
+		ms, err = c.invokeWindow(ctx, id)
+	default:
+		return nil, fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
 	}
 
 	return ms, err
@@ -203,9 +317,12 @@ func WithLogger(l *zap.Logger) Option {
 	}
 }
 
-func New(config *internal.Config, opts ...Option) (*Collector, error) {
+func New(config *config.Config, opts ...Option) (*Collector, error) {
 	c := &Collector{
 		Config: config,
+		now: func() time.Time {
+			return time.Now().UTC()
+		},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -213,7 +330,7 @@ func New(config *internal.Config, opts ...Option) (*Collector, error) {
 	return c, nil
 }
 
-func NewFromConfigs(configs []*internal.Config, opts ...Option) ([]*Collector, error) {
+func NewFromConfigs(configs []*config.Config, opts ...Option) ([]*Collector, error) {
 	var cs []*Collector
 	for _, config := range configs {
 		coll, err := New(config, opts...)

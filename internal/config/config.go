@@ -1,4 +1,4 @@
-package internal
+package config
 
 import (
 	"bytes"
@@ -17,10 +17,13 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path"
+	"path/filepath"
 	"text/template"
-	"time"
 )
+
+type validater interface {
+	Validate() error
+}
 
 type Tag struct {
 	Key   string
@@ -30,15 +33,7 @@ type Tag struct {
 type Metric struct {
 	Name string
 	Type metrics.Type
-	// Grain specifies the aggregation of this metric. It will be used to calculate the
-	// grain datetime.
-	Grain *time.Duration
-	Tags  []Tag
-}
-
-type Schedule struct {
-	Interval *time.Duration
-	Cron     *string
+	Tags []Tag
 }
 
 type Collector struct {
@@ -52,41 +47,36 @@ type Sink struct {
 	Config map[string]any
 }
 
-type Source struct {
-	Type    sources.Type
-	Sourcer sources.Sourcer
-	Config  map[string]any
-}
-
-type ConfigOption func(*Config)
-
-func WithJustConfigValidation(validate bool) ConfigOption {
-	return func(c *Config) {
-		c.validate = validate
-	}
-}
-
-func WithConfigLogger(l *zap.Logger) ConfigOption {
-	return func(c *Config) {
-		c.logger = l
-	}
-}
-
 type Config struct {
-	Name     string
-	Metric   Metric
-	Schedule Schedule
-	Source   Source
-	Sinks    map[string]Sink
+	Name       string
+	Metric     Metric
+	Schedule   Schedule
+	Source     Source
+	Sinks      map[string]Sink
+	StateStore StateStore `yaml:"state_store"`
 
 	logger *zap.Logger
 	// validate will skip initializing network dependencies
 	validate bool
 }
 
+type Option func(*Config)
+
+func WithJustValidation(validate bool) Option {
+	return func(c *Config) {
+		c.validate = validate
+	}
+}
+
+func WithLogger(l *zap.Logger) Option {
+	return func(c *Config) {
+		c.logger = l
+	}
+}
+
 // initSource initializes the correct source.
 func initSource(c *Config) error {
-	var s sources.Sourcer
+	var s sources.MetricSourcer
 	var err error
 	switch c.Source.Type {
 	case sources.TypePostgres:
@@ -184,20 +174,15 @@ func parseTemplate(bs []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func NewConfigsFromDir(dirname string, opts ...ConfigOption) ([]*Config, error) {
-	files, err := os.ReadDir(dirname)
+func NewFromGlob(glob string, opts ...Option) ([]*Config, error) {
+	files, err := filepath.Glob(glob)
 	if err != nil {
 		return nil, err
 	}
 	var configs []*Config
 
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-
-		n := path.Join(dirname, f.Name())
-		c, err := NewConfigFromFile(n, opts...)
+	for _, fName := range files {
+		c, err := NewFromFile(fName, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -206,52 +191,39 @@ func NewConfigsFromDir(dirname string, opts ...ConfigOption) ([]*Config, error) 
 	return configs, nil
 }
 
-func NewConfigFromFile(name string, opts ...ConfigOption) (*Config, error) {
-	bs, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	return NewConfig(bs, opts...)
-}
-
-type validator func(Config) error
-
-func validateMetric(c Config) error {
-	if c.Schedule.Interval != nil && (c.Schedule.Interval.Nanoseconds() != c.Metric.Grain.Nanoseconds()) {
-		return fmt.Errorf("'schedule.interval' should match 'metric.grain'")
-	}
-	return nil
-}
-
-func validateSchedule(c Config) error {
-	if c.Schedule.Interval == nil && c.Schedule.Cron == nil {
-		return fmt.Errorf("must set schedule.interval or schedule.cron")
-	}
-
-	if c.Schedule.Interval != nil && c.Schedule.Cron != nil {
-		return fmt.Errorf("must set either schedule.interval or schedule.cron")
-	}
+func defaults(c *Config) error {
+	(&c.Source).SetDefaults()
 
 	return nil
 }
 
 func validate(c Config) error {
-	validators := []validator{
-		validateSchedule,
-		validateMetric,
+	validators := []validater{
+		c.Schedule,
+		c.Source,
+		c.StateStore,
 	}
 
-	for _, vFn := range validators {
-		if err := vFn(c); err != nil {
+	for _, v := range validators {
+		if err := v.Validate(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// NewConfig initializes a config from yaml bytes.
-// NewConfig initializes all subtypes as well.
-func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
+func NewFromFile(name string, opts ...Option) (*Config, error) {
+	fmt.Printf("loading config from file: %q\n", name)
+	bs, err := os.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+	return New(bs, opts...)
+}
+
+// New initializes a config from yaml bytes.
+// New initializes all subtypes as well.
+func New(raw []byte, opts ...Option) (*Config, error) {
 	var conf Config
 
 	for _, opt := range opts {
@@ -267,7 +239,15 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		return nil, err
 	}
 
+	if err := defaults(&conf); err != nil {
+		return nil, err
+	}
+
 	if err := validate(conf); err != nil {
+		return nil, err
+	}
+
+	if err := initStateStore(&conf); err != nil {
 		return nil, err
 	}
 
