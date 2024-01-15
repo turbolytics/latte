@@ -53,7 +53,7 @@ type Config struct {
 	Schedule   Schedule
 	Source     Source
 	Sinks      map[string]Sink
-	StateStore StateStore
+	StateStore StateStore `yaml:"state_store"`
 
 	logger *zap.Logger
 	// validate will skip initializing network dependencies

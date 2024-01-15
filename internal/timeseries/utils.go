@@ -48,12 +48,3 @@ func LastCompleteBucket(ct time.Time, d time.Duration) Bucket {
 	b.Start = b.End.Add(-d)
 	return b
 }
-
-// BucketFromTime generates a range based on the time provided
-// and the duration provided.
-func BucketFromTime(ct time.Time, d time.Duration) Bucket {
-	b := Bucket{}
-	b.Start = ct.Truncate(d)
-	b.End = b.Start.Add(d)
-	return b
-}

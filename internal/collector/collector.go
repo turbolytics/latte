@@ -180,8 +180,6 @@ func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID,
 		return ms, err
 	}
 
-	fmt.Println(c.now())
-
 	err = c.Config.StateStore.Storer.SaveInvocation(&state.Invocation{
 		CollectorName: c.Config.Name,
 		Time:          c.now(),
@@ -240,6 +238,14 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 		}
 		window := windows[0]
 		ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
+	}
+
+	if err = c.Transform(ms); err != nil {
+		return ms, err
+	}
+
+	if err = c.Sink(ctx, ms); err != nil {
+		return ms, err
 	}
 
 	return ms, err
