@@ -1,26 +1,26 @@
-name: service_availability_5m
+name: service_availability_24h
 
 state_store:
   type: memory
 
 metric:
-  name: service.availability.5m
+  name: service.availability.24h
   type: COUNT
   tags:
     - key: env
       value: prod
 
 schedule:
-  interval: 1m
+  interval: 4h
 
 source:
   type: prometheus
   strategy: window
   config:
     uri: 'http://{{ getEnvOrDefault "SC_PROM_HOST" "localhost" }}:9090/api/v1/query'
-    query: 'sum(round(increase(collector_invoke_count_total[5m]))) by (result_status_code)'
+    query: 'sum(round(increase(collector_invoke_count_total[24h]))) by (result_status_code)'
     time:
-      window: 5m
+      window: 24h
     sql: |
       SELECT
         'signals-collector' as service,
