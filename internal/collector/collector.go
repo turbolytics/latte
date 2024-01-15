@@ -161,6 +161,35 @@ func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Me
 	return ms, err
 }
 
+func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Bucket) ([]*metrics.Metric, error) {
+	c.logger.Info(
+		"collector.invokeWindow",
+		zap.String("msg", "invoking for window"),
+		zap.String("window.start", window.Start.String()),
+		zap.String("window.end", window.End.String()),
+		zap.String("id", id.String()),
+		zap.String("name", c.Config.Name),
+	)
+
+	// it is passed the window, collect data for the window
+	// get start of window and end of window
+	ctx = context.WithValue(ctx, "window.start", window.Start)
+	ctx = context.WithValue(ctx, "window.end", window.End)
+	ms, err := c.Source(ctx)
+	if err != nil {
+		return ms, err
+	}
+
+	fmt.Println(c.now())
+
+	err = c.Config.StateStore.Storer.SaveInvocation(&state.Invocation{
+		CollectorName: c.Config.Name,
+		Time:          c.now(),
+		Window:        &window,
+	})
+	return ms, err
+}
+
 // invokeWindow uses the state store to check if a full window has elapsed.
 // invokeWindow will only source data when a full window has elapsed.
 // TODO - What happens when a window is changed in the config?
@@ -168,7 +197,10 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	var ms []*metrics.Metric
 	var err error
 	// TODO invokeWindow should handle gaps in windows.
-	i, err := c.Config.StateStore.Storer.MostRecentInvocation(c.Config.Name)
+	i, err := c.Config.StateStore.Storer.MostRecentInvocation(
+		ctx,
+		c.Config.Name,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -181,27 +213,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 			c.now(),
 			*(c.Config.Source.Sourcer.Window()),
 		)
-		c.logger.Info(
-			"collector.invokeWindow",
-			zap.String("msg", "invoking for window"),
-			zap.String("window.start", window.Start.String()),
-			zap.String("window.end", window.End.String()),
-			zap.String("id", id.String()),
-			zap.String("name", c.Config.Name),
-		)
-
-		// it is passed the window, collect data for the window
-		// get start of window and end of window
-		ctx = context.WithValue(ctx, "window.start", window.Start)
-		ctx = context.WithValue(ctx, "window.end", window.End)
-		ms, err = c.Source(ctx)
-		if err := c.Config.StateStore.Storer.SaveInvocation(&state.Invocation{
-			CollectorName: c.Config.Name,
-			Time:          c.now(),
-			Window:        &window,
-		}); err != nil {
-			return nil, err
-		}
+		ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
 	} else {
 		// a previous invocation exists.
 		// Get all buckets that have passed since invocation end
@@ -227,10 +239,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 			return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
 		}
 		window := windows[0]
-		// a single window has passed, collect data for that window
-		ctx = context.WithValue(ctx, "window.start", window.Start)
-		ctx = context.WithValue(ctx, "window.end", window.End)
-		ms, err = c.Source(ctx)
+		ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
 	}
 
 	return ms, err

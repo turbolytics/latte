@@ -1,7 +1,9 @@
 package state
 
 import (
+	"context"
 	"github.com/turbolytics/collector/internal/timeseries"
+	"io"
 	"time"
 )
 
@@ -18,6 +20,8 @@ type Invocation struct {
 }
 
 type Storer interface {
-	MostRecentInvocation(collectorName string) (*Invocation, error)
+	io.Closer
+
+	MostRecentInvocation(ctx context.Context, collectorName string) (*Invocation, error)
 	SaveInvocation(invocation *Invocation) error
 }
