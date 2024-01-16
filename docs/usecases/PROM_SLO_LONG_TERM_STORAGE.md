@@ -14,23 +14,23 @@ The signals collector will:
 
 ## Configuration File
 
-<img width="927" alt="Screenshot 2024-01-04 at 4 58 44 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/64423f0f-360c-4fe3-8a86-16251a59de6b">
+<img width="887" alt="Screenshot 2024-01-15 at 2 32 32 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/c3beb697-7b86-4624-8f60-688216c4ad01">
 
 ## Tutorial
 
 ### Determine the Prometheus Query
 
-The first step is to determine the prometheus query that will produce the correct daily aggregate data. Prometheus ships with a web frontend that supports querying underlying prometheus data.
+The first step is to determine the prometheus query that will produce the correct daily aggregate data. Prometheus ships with a web frontend that supports querying underlying prometheus data:
 
 <img width="1512" alt="Screenshot 2024-01-15 at 2 18 45 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/51f3e14a-8aa8-4816-9f2c-6cde43fd8756">
 
-[Test the query directly against the API to see the response returned](https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries):
+Once a query is built, [test the query directly against the API to see the response returned](https://prometheus.io/docs/prometheus/latest/querying/api/#instant-queries):
 
 ```
-curl 'http://localhost:9090/api/v1/query?query=increase%28collector_invoke_count_total%5B24h%5D%29' | jq .
+curl 'http://localhost:9090/api/v1/query?query=sum%28round%28increase%28collector_invoke_count_total%5B24h%5D%29%29%29%20by%20%28result_status_code%29' | jq .
 ```
 
-```
+```json
 {
   "status": "success",
   "data": {
@@ -38,18 +38,25 @@ curl 'http://localhost:9090/api/v1/query?query=increase%28collector_invoke_count
     "result": [
       {
         "metric": {
-          "collector_name": "mongo.users.10s",
-          "instance": "host.docker.internal:12223",
-          "job": "signals-collector-host",
-          "otel_scope_name": "signals-collector",
           "result_status_code": "OK"
         },
         "value": [
-          1704403299.513,
-          "65.28921807134175"
+          1705347547.606,
+          "23"
         ]
       },
-    ...
+      {
+        "metric": {
+          "result_status_code": "ERROR"
+        },
+        "value": [
+          1705347547.606,
+          "0"
+        ]
+      }
+    ]
+  }
+}
 ```
 
 ### Configure Signals Collector to Query Prometheus API
@@ -57,16 +64,20 @@ curl 'http://localhost:9090/api/v1/query?query=increase%28collector_invoke_count
 Signals collector needs to know where to reach prometheus and the query to execute against prometheus:
 
 ```yaml
-source:
   type: prometheus
+  strategy: window
   config:
     uri: 'http://{{ getEnvOrDefault "SC_PROM_HOST" "localhost" }}:9090/api/v1/query'
-    query: 'increase(collector_invoke_count_total[24h])'
-    time_expression: $start_of_day
-    ...
+    query: 'sum(round(increase(collector_invoke_count_total[24h]))) by (result_status_code)'
+    time:
+      window: 24h
 ```
 
-Notice the `time_expression`. This is a special variable that will pass in `&time=<UNIX_TIMESTAMP>` parameter into the `query`. This will ensure idempotent data collection runs. Every time signals collector runs it will start collection from the beginning of the day. This will ensure that the date is consistent, and that the date being used is already passed, meaning that the full 24 hours of availability data is present.
+The `type` value specifies that this is a `prometheus` collection. The strategy specifies that this is a `window` type collection. More information about `window` collection strategy is available here. 
+
+Notice the `time.window`. This is a special variable that tells prometheus how much data it is working with. The collector needs this information to correctly schedule data collections against prometheus. The `time.window` property is used to avoid parsing this information out of the prometheus `query` value.
+
+This will ensure idempotent data collection runs. Every time signals collector runs it will start collection from the beginning of the day. This will ensure that the date is consistent, and that the date being used is already passed, meaning that the full 24 hours of availability data is present.
 
 ### Configure Signals Collector Transform 
 
@@ -79,35 +90,33 @@ source:
     ...
     sql: |
       SELECT
-        metric->>'collector_name' as service,
-        CASE
-          WHEN metric->>'result_status_code' = 'OK'
-          THEN false
-          ELSE true
-        END as error,
-        round(value::DOUBLE, 0) as value
+          'signals-collector' as service,
+          CASE
+              WHEN metric->>'result_status_code' = 'OK'
+              THEN false
+              ELSE true
+          END as error,
+          round(value::DOUBLE, 0) as value
       FROM
-        prom_metrics
+          prom_metrics
 ```
 
-This sql is executed using duckdb against the API response returned from the prometheus API. Using duckdb provides the end user the power to model and transform the responses using SQL. Output from this stage will look similiar to the following:
+This sql is executed using duckdb against the API response returned from the prometheus API. Using duckdb provides the end user the power to model and transform the responses using SQL. Output from this stage will look similar to the following:
 
 ```json
-...
 {
-  "uuid": "6fc67572-76d1-4c36-a9d1-e07a5a40f5cb",
+  "uuid": "fa201e5e-c67c-451c-a321-f51924a08d57",
   "name": "service.availability.24h",
-  "value": 12,
+  "value": 510,
   "type": "COUNT",
   "tags": {
     "env": "prod",
     "error": "false",
-    "service": "postgres.users.total.1m"
+    "service": "signals-collector"
   },
-  "timestamp": "2024-01-04T21:30:50.345872Z",
-  "grain_datetime": "2024-01-04T00:00:00Z"
+  "timestamp": "2024-01-15T19:11:31.637377Z",
+  "window": "2024-01-15T00:00:00Z"
 }
-...
 ```
 
 ### Validate Signals Collector Config
@@ -120,26 +129,101 @@ go run cmd/main.go config validate --config=$(PWD)/dev/examples/prometheus.stdou
 VALID=true
 ```
 
+Validation ensures that the configuration file is correct and can be successfully parsed.
+
 ### Invoke Signals Collector Config
 
-After the collector configuration is validated it can be invoked, using the following command:
+After the collector configuration file is validated it can be invoked using the following command:
 
 ```
 go run cmd/main.go config invoke --config=$(PWD)/dev/examples/prometheus.stdout.yaml
 ```
 
-### Start Signals collector for regular collection
+Invocation actually executes the configuration file. This is used to verify that data is sourced, transformed and sunk correctly.
+
+### Start Signals collector for Regular Collection
+
+Signal collector ships with a daemon that executes collectors at their specified intervals. The following command starts signals collector as a service: 
 
 ```
-go run cmd/main.go run -c /path/to/your/configuration/file.yaml
+go run cmd/main.go run -c $(PWD)/dev/examples/prometheus.stdout.yaml
 ```
+
+The service executes the prometheus collector every 12 hours. The prometheus collector will collect availability data for 24 hours and emit a single data point every time it encounters a fully complete day. More information about this is available under the "window" strategy documentation.
+
+Signals collector also ships as a [docker image](https://github.com/turbolytics/signals-collector/blob/main/Dockerfile) and on [dockerhub](https://hub.docker.com/repository/docker/turbolytics/signals-collector/general).
 
 ### Query Output for Reporting
 
-The final step is to query data for reporting. This example collects availability data daily. Error and non-error counts are collected which allow for availability calculation over arbitrary intervals 
+The final step is to query data for reporting. This example collects availability data daily. Error and non-error counts are collected which allow for availability calculation over arbitrary intervals. The prometheus collector used in this example outputs availibility data to a local audit file. The following shows an example of this data:
 
+```
+D select name, value, tags, "window" from read_json('signals.audit.log', auto_detect=true, format=newline_delimited);
+┌──────────────────────────┬───────┬─────────────────────────────────────────────────────────────┬─────────────────────┐
+│           name           │ value │                            tags                             │       window        │
+│         varchar          │ int64 │     struct(env varchar, error varchar, service varchar)     │      timestamp      │
+├──────────────────────────┼───────┼─────────────────────────────────────────────────────────────┼─────────────────────┤
+│ service.availability.24h │    41 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-15 00:00:00 │
+│ service.availability.24h │    61 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-14 00:00:00 │
+│ service.availability.24h │     2 │ {'env': prod, 'error': true, 'service': signals-collector}  │ 2024-01-14 00:00:00 │
+│ service.availability.24h │    80 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-13 00:00:00 │
+│ service.availability.24h │    71 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-12 00:00:00 │
+└──────────────────────────┴───────┴─────────────────────────────────────────────────────────────┴─────────────────────┘
+```
+
+The collector counts successes and errors per day. Notice how some collections do not include errors.
+
+Availability can be calculated after the data is collected. Availability is a ratio and calculated over an interval. Availbility is defined as:
+
+```
 sum(success) 
 / 
 sum(successes + errors)
+```
+
+```
+SELECT
+    "window",
+    ROUND((sum(successes) / (sum(successes) + sum(errors))), 4) as availability
+FROM (
+    SELECT 
+      "window",
+      CASE
+        WHEN tags ->> 'error' = true 
+          THEN value
+          ELSE 0
+        END AS errors,
+      CASE
+        WHEN tags ->> 'error' = false 
+          THEN value
+            ELSE 0
+        END AS successes
+    FROM   
+      read_json('signals.audit.log', auto_detect = true, format = newline_delimited)
+    GROUP  BY 
+      "window",
+      tags,
+      value
+    ORDER BY 
+      "window" DESC  
+)
+GROUP BY 
+    "window"
+ORDER BY 
+    "window"
+```
+
+The final result is availability data by day!
+```
+┌─────────────────────┬──────────────┐
+│       window        │ availability │
+│      timestamp      │    double    │
+├─────────────────────┼──────────────┤
+│ 2024-01-12 00:00:00 │          1.0 │
+│ 2024-01-13 00:00:00 │          1.0 │
+│ 2024-01-14 00:00:00 │       0.9683 │
+│ 2024-01-15 00:00:00 │          1.0 │
+└─────────────────────┴──────────────┘
+```
 
 
