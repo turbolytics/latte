@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/collector/internal/config"
+	"github.com/turbolytics/collector/internal/collector/metric/config"
 )
 
 func NewValidateCmd() *cobra.Command {

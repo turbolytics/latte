@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/spf13/cobra"
 	"github.com/turbolytics/collector/internal/collector/metric"
-	"github.com/turbolytics/collector/internal/config"
+	"github.com/turbolytics/collector/internal/collector/metric/config"
 	"go.uber.org/zap"
 )
 
