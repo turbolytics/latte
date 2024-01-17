@@ -19,21 +19,36 @@ import (
 
 var meter = otel.Meter("signals-collector")
 
-type Collector struct {
+type Collector interface {
+	Close() error
+	InvokeHandleError(context.Context)
+	Interval() *time.Duration
+	Cron() *string
+}
+
+type MetricCollector struct {
 	Config *config.Config
 
 	logger *zap.Logger
 	now    func() time.Time
 }
 
-func (c *Collector) Close() error {
+func (c *MetricCollector) Close() error {
 	for _, s := range c.Config.Sinks {
 		s.Sinker.Close()
 	}
 	return nil
 }
 
-func (c *Collector) Transform(ms []*metrics.Metric) error {
+func (c *MetricCollector) Interval() *time.Duration {
+	return c.Config.Schedule.Interval
+}
+
+func (c *MetricCollector) Cron() *string {
+	return c.Config.Schedule.Cron
+}
+
+func (c *MetricCollector) Transform(ms []*metrics.Metric) error {
 	for _, m := range ms {
 		m.Name = c.Config.Metric.Name
 		m.Type = c.Config.Metric.Type
@@ -48,7 +63,7 @@ func (c *Collector) Transform(ms []*metrics.Metric) error {
 	return nil
 }
 
-func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error) {
+func (c *MetricCollector) Source(ctx context.Context) (ms []*metrics.Metric, err error) {
 	start := time.Now().UTC()
 
 	histogram, _ := meter.Float64Histogram(
@@ -88,7 +103,7 @@ func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error
 	return ms, nil
 }
 
-func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
+func (c *MetricCollector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 
 	histogram, _ := meter.Float64Histogram(
 		"collector.sink.duration",
@@ -126,14 +141,14 @@ func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 
 // InvokeHandleError will log any Invoke errors and not return them.
 // Useful for async scheduling.
-func (c *Collector) InvokeHandleError(ctx context.Context) {
+func (c *MetricCollector) InvokeHandleError(ctx context.Context) {
 	_, err := c.Invoke(ctx)
 	if err != nil {
 		c.logger.Error(err.Error())
 	}
 }
 
-func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
+func (c *MetricCollector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
 	ms, err := c.Source(ctx)
 	if err != nil {
 		return nil, err
@@ -161,7 +176,7 @@ func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Me
 	return ms, err
 }
 
-func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Bucket) ([]*metrics.Metric, error) {
+func (c *MetricCollector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Bucket) ([]*metrics.Metric, error) {
 	c.logger.Info(
 		"collector.invokeWindow",
 		zap.String("msg", "invoking for window"),
@@ -191,7 +206,7 @@ func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID,
 // invokeWindow uses the state store to check if a full window has elapsed.
 // invokeWindow will only source data when a full window has elapsed.
 // TODO - What happens when a window is changed in the config?
-func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
+func (c *MetricCollector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
 	var ms []*metrics.Metric
 	var err error
 	// TODO invokeWindow should handle gaps in windows.
@@ -254,7 +269,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	return ms, err
 }
 
-func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
+func (c *MetricCollector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
 	start := time.Now().UTC()
 
 	histogram, _ := meter.Float64Histogram(
@@ -292,7 +307,7 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 	)
 	ctx = context.WithValue(ctx, "id", id)
 
-	// Collector supports multiple sourcing strategies.
+	// MetricCollector supports multiple sourcing strategies.
 	// The simplest is "tick" strategy which just invokes
 	// the sourcer without any additional state necessary
 	// The windowing strategy may result in multiple source
@@ -309,16 +324,16 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 	return ms, err
 }
 
-type Option func(*Collector)
+type Option func(*MetricCollector)
 
 func WithLogger(l *zap.Logger) Option {
-	return func(c *Collector) {
+	return func(c *MetricCollector) {
 		c.logger = l
 	}
 }
 
-func New(config *config.Config, opts ...Option) (*Collector, error) {
-	c := &Collector{
+func New(config *config.Config, opts ...Option) (*MetricCollector, error) {
+	c := &MetricCollector{
 		Config: config,
 		now: func() time.Time {
 			return time.Now().UTC()
@@ -330,10 +345,10 @@ func New(config *config.Config, opts ...Option) (*Collector, error) {
 	return c, nil
 }
 
-func NewFromConfigs(configs []*config.Config, opts ...Option) ([]*Collector, error) {
-	var cs []*Collector
-	for _, config := range configs {
-		coll, err := New(config, opts...)
+func NewFromConfigs(configs []*config.Config, opts ...Option) ([]Collector, error) {
+	var cs []Collector
+	for _, conf := range configs {
+		coll, err := New(conf, opts...)
 		if err != nil {
 			return nil, err
 		}

@@ -9,7 +9,7 @@ import (
 
 type Service struct {
 	logger     *zap.Logger
-	collectors []*collector.Collector
+	collectors []collector.Collector
 	scheduler  gocron.Scheduler
 }
 
@@ -34,13 +34,13 @@ func (s *Service) Run(ctx context.Context) error {
 		colCopy := col
 
 		var jd gocron.JobDefinition
-		if colCopy.Config.Schedule.Interval != nil {
+		if colCopy.Interval() != nil {
 			jd = gocron.DurationJob(
-				*colCopy.Config.Schedule.Interval,
+				*(colCopy.Interval()),
 			)
-		} else if colCopy.Config.Schedule.Cron != nil {
+		} else if colCopy.Cron() != nil {
 			jd = gocron.CronJob(
-				*colCopy.Config.Schedule.Cron,
+				*(colCopy.Cron()),
 				false,
 			)
 		}
@@ -73,7 +73,7 @@ func WithLogger(l *zap.Logger) Option {
 	}
 }
 
-func NewService(cs []*collector.Collector, opts ...Option) (*Service, error) {
+func NewService(cs []collector.Collector, opts ...Option) (*Service, error) {
 	sch, err := gocron.NewScheduler()
 	if err != nil {
 		return nil, err
