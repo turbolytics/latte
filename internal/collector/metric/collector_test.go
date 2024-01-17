@@ -1,10 +1,11 @@
-package collector
+package metric
 
 import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/turbolytics/collector/internal/collector"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/collector/state/memory"
 	"github.com/turbolytics/collector/internal/config"
@@ -43,8 +44,8 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 }
 
 func TestCollector_Close(t *testing.T) {
-	ts := &TestSink{}
-	coll := &MetricCollector{
+	ts := &collector.TestSink{}
+	coll := &Collector{
 		Config: &config.Config{
 			Sinks: map[string]config.Sink{
 				"sink1": {
@@ -58,7 +59,7 @@ func TestCollector_Close(t *testing.T) {
 	}
 	err := coll.Close()
 	assert.NoError(t, err)
-	assert.Equal(t, 2, ts.closes)
+	assert.Equal(t, 2, ts.Closes)
 }
 
 func TestCollector_Source_ValidMetrics(t *testing.T) {
@@ -72,7 +73,7 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 		Ms: expectedMetrics,
 	}
 
-	coll := &MetricCollector{
+	coll := &Collector{
 		Config: &config.Config{
 			Source: config.Source{
 				Sourcer:  ts,
@@ -100,7 +101,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 	}
 	ss, _ := memory.NewFromGenericConfig(map[string]any{})
 
-	coll := &MetricCollector{
+	coll := &Collector{
 		logger: zap.NewNop(),
 		now: func() time.Time {
 			return now
@@ -166,7 +167,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		},
 	})
 
-	coll := &MetricCollector{
+	coll := &Collector{
 		logger: zap.NewNop(),
 		now: func() time.Time {
 			return now
@@ -214,7 +215,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 	})
 	assert.NoError(t, err)
 
-	coll := &MetricCollector{
+	coll := &Collector{
 		logger: zap.NewNop(),
 		now: func() time.Time {
 			return now

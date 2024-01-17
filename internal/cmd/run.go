@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/collector/internal/collector"
+	"github.com/turbolytics/collector/internal/collector/metric"
 	"github.com/turbolytics/collector/internal/collector/service"
 	"github.com/turbolytics/collector/internal/config"
 	"github.com/turbolytics/collector/internal/obs"
@@ -68,9 +68,9 @@ func NewRunCmd() *cobra.Command {
 				panic(err)
 			}
 
-			cs, err := collector.NewFromConfigs(
+			cs, err := metric.NewFromConfigs(
 				confs,
-				collector.WithLogger(logger),
+				metric.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)

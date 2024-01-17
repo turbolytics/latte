@@ -1,7 +1,7 @@
 package collector
 
 type TestSink struct {
-	closes int
+	Closes int
 }
 
 func (ts *TestSink) Write(bs []byte) (int, error) {
@@ -9,6 +9,6 @@ func (ts *TestSink) Write(bs []byte) (int, error) {
 }
 
 func (ts *TestSink) Close() error {
-	ts.closes++
+	ts.Closes++
 	return nil
 }
