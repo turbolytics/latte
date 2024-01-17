@@ -1,6 +1,6 @@
 # signals-collector
 
-Signals collector is a modern Extract Transform and Aggregate (ETA) tool. 
+Signals collector is a modern Extract Transform Load (ELT) tool. 
 
 Signals Collector queries data at the source and only creates analytics data necessary for insights, leaving the operational data in the operational data store.
 
