@@ -44,7 +44,7 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 
 func TestCollector_Close(t *testing.T) {
 	ts := &TestSink{}
-	coll := &Collector{
+	coll := &MetricCollector{
 		Config: &config.Config{
 			Sinks: map[string]config.Sink{
 				"sink1": {
@@ -72,7 +72,7 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 		Ms: expectedMetrics,
 	}
 
-	coll := &Collector{
+	coll := &MetricCollector{
 		Config: &config.Config{
 			Source: config.Source{
 				Sourcer:  ts,
@@ -100,7 +100,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 	}
 	ss, _ := memory.NewFromGenericConfig(map[string]any{})
 
-	coll := &Collector{
+	coll := &MetricCollector{
 		logger: zap.NewNop(),
 		now: func() time.Time {
 			return now
@@ -166,7 +166,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		},
 	})
 
-	coll := &Collector{
+	coll := &MetricCollector{
 		logger: zap.NewNop(),
 		now: func() time.Time {
 			return now
@@ -214,7 +214,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 	})
 	assert.NoError(t, err)
 
-	coll := &Collector{
+	coll := &MetricCollector{
 		logger: zap.NewNop(),
 		now: func() time.Time {
 			return now
