@@ -3,8 +3,8 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/collector/internal/collector/metric"
-	"github.com/turbolytics/collector/internal/collector/metric/config"
+	"github.com/turbolytics/collector/internal/collector/metrics"
+	"github.com/turbolytics/collector/internal/collector/metrics/config"
 	"github.com/turbolytics/collector/internal/collector/service"
 	"github.com/turbolytics/collector/internal/obs"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -68,9 +68,9 @@ func NewRunCmd() *cobra.Command {
 				panic(err)
 			}
 
-			cs, err := metric.NewFromConfigs(
+			cs, err := metrics.NewFromConfigs(
 				confs,
-				metric.WithLogger(logger),
+				metrics.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)

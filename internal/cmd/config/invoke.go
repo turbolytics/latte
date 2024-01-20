@@ -3,8 +3,8 @@ package config
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/collector/internal/collector/metric"
-	"github.com/turbolytics/collector/internal/collector/metric/config"
+	"github.com/turbolytics/collector/internal/collector/metrics"
+	"github.com/turbolytics/collector/internal/collector/metrics/config"
 	"go.uber.org/zap"
 )
 
@@ -27,9 +27,9 @@ func NewInvokeCmd() *cobra.Command {
 			if err != nil {
 				panic(err)
 			}
-			c, err := metric.New(
+			c, err := metrics.New(
 				config,
-				metric.WithLogger(logger),
+				metrics.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)

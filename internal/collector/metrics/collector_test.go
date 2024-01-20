@@ -1,4 +1,4 @@
-package metric
+package metrics
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/turbolytics/collector/internal/collector"
-	"github.com/turbolytics/collector/internal/collector/metric/config"
+	"github.com/turbolytics/collector/internal/collector/metrics/config"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/collector/state/memory"
 	"github.com/turbolytics/collector/internal/metrics"
