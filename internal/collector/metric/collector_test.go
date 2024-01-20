@@ -145,7 +145,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 	assert.Equal(t, &state.Invocation{
 		CollectorName: "test_collector",
 		Time:          now,
-		Window: &timeseries.Bucket{
+		Window: &timeseries.Window{
 			Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
 			End:   time.Date(2024, 1, 1, 1, 1, 0, 0, time.UTC),
 		},
@@ -161,7 +161,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 	ss, _ := memory.NewFromGenericConfig(map[string]any{})
 	ss.SaveInvocation(&state.Invocation{
 		CollectorName: "test_collector",
-		Window: &timeseries.Bucket{
+		Window: &timeseries.Window{
 			Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
 			End:   time.Date(2024, 1, 1, 2, 0, 0, 0, time.UTC),
 		},
@@ -208,7 +208,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 	ss, _ := memory.NewFromGenericConfig(map[string]any{})
 	err := ss.SaveInvocation(&state.Invocation{
 		CollectorName: "test_collector",
-		Window: &timeseries.Bucket{
+		Window: &timeseries.Window{
 			Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
 			End:   time.Date(2024, 1, 1, 2, 0, 0, 0, time.UTC),
 		},
@@ -259,7 +259,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 	assert.Equal(t, &state.Invocation{
 		CollectorName: "test_collector",
 		Time:          now,
-		Window: &timeseries.Bucket{
+		Window: &timeseries.Window{
 			Start: time.Date(2024, 1, 1, 2, 0, 0, 0, time.UTC),
 			End:   time.Date(2024, 1, 1, 3, 0, 0, 0, time.UTC),
 		},

@@ -170,7 +170,7 @@ func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Me
 	return ms, err
 }
 
-func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Bucket) ([]*metrics.Metric, error) {
+func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Window) ([]*metrics.Metric, error) {
 	c.logger.Info(
 		"collector.invokeWindow",
 		zap.String("msg", "invoking for window"),
@@ -212,45 +212,81 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 		return nil, err
 	}
 
-	// no previous invocations exist, just perform the current collection
-	// and save.
-	if i == nil {
-		// get the current completed window
-		window := timeseries.LastCompleteBucket(
-			c.now(),
-			*(c.Config.Source.Sourcer.Window()),
-		)
-		ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
-	} else {
-		// a previous invocation exists.
-		// Get all buckets that have passed since invocation end
-
-		// truncating the current time to the duration....
-		windows, err := timeseries.TimeBuckets(
-			i.Window.End,
-			c.now(),
-			*(c.Config.Source.Sourcer.Window()),
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		// if no window has passed return and wait
-		if len(windows) == 0 {
-			return nil, nil
-		} else if len(windows) > 1 {
-			c.logger.Error(
-				"collector.invokeWindow",
-				zap.String("msg", "multiple windows detected"),
-				zap.Int("windows", len(windows)),
-				zap.String("id", id.String()),
-				zap.String("name", c.Config.Name),
-			)
-			return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
-		}
-		window := windows[0]
-		ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
+	var lastWindowEnd *time.Time
+	if i != nil && i.Window != nil {
+		lastWindowEnd = &i.Window.End
 	}
+
+	hw := timeseries.NewHistoricTumblingWindower(
+		timeseries.WithHistoricTumblingWindowerNow(c.now),
+	)
+	windows, err := hw.FullWindowsSince(
+		lastWindowEnd,
+		*(c.Config.Source.Sourcer.Window()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	switch len(windows) {
+	case 0:
+		// no full windows have passed, just return
+		return nil, nil
+	case 1:
+		// a single window is available, collect it
+		ms, err = c.invokeWindowSourceAndSave(ctx, id, windows[0])
+	default:
+		// multiple windows have been found, currently
+		// not supported
+		c.logger.Error(
+			"collector.invokeWindow",
+			zap.String("msg", "multiple windows detected"),
+			zap.Int("windows", len(windows)),
+			zap.String("id", id.String()),
+			zap.String("name", c.Config.Name),
+		)
+		return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
+	}
+	/*
+		// no previous invocations exist, just perform the current collection
+		// and save.
+		if i == nil {
+			// get the current completed window
+			window := timeseries.LastCompleteWindow(
+				c.now(),
+				*(c.Config.Source.Sourcer.Window()),
+			)
+			ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
+		} else {
+			// a previous invocation exists.
+			// Get all buckets that have passed since invocation end
+
+			// truncating the current time to the duration....
+			windows, err := timeseries.TimeWindows(
+				i.Window.End,
+				c.now(),
+				*(c.Config.Source.Sourcer.Window()),
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			// if no window has passed return and wait
+			if len(windows) == 0 {
+				return nil, nil
+			} else if len(windows) > 1 {
+				c.logger.Error(
+					"collector.invokeWindow",
+					zap.String("msg", "multiple windows detected"),
+					zap.Int("windows", len(windows)),
+					zap.String("id", id.String()),
+					zap.String("name", c.Config.Name),
+				)
+				return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
+			}
+			window := windows[0]
+			ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
+		}
+	*/
 
 	if err = c.Transform(ms); err != nil {
 		return ms, err

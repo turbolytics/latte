@@ -5,14 +5,51 @@ import (
 	"time"
 )
 
-type Bucket struct {
+type Window struct {
 	Start time.Time
 	End   time.Time
 }
 
-// TimeBuckets calculates all complete buckets (of duration d)
+type HistoricTumblingWindowerOption func(*HistoricTumblingWindower)
+
+func WithHistoricTumblingWindowerNow(now func() time.Time) HistoricTumblingWindowerOption {
+	return func(w *HistoricTumblingWindower) {
+		w.now = now
+	}
+}
+
+func NewHistoricTumblingWindower(opts ...HistoricTumblingWindowerOption) HistoricTumblingWindower {
+	w := HistoricTumblingWindower{
+		now: func() time.Time {
+			return time.Now().UTC()
+		},
+	}
+	for _, opt := range opts {
+		opt(&w)
+	}
+	return w
+}
+
+type HistoricTumblingWindower struct {
+	now func() time.Time
+}
+
+// FullWindowsSince represents all missing full windows since the time
+func (hw HistoricTumblingWindower) FullWindowsSince(t *time.Time, d time.Duration) ([]Window, error) {
+	// no time is provided, just get the last complete window
+	if t == nil {
+		window := LastCompleteWindow(hw.now(), d)
+		return []Window{window}, nil
+	}
+
+	// time is provided, get all complete windows from the time provided
+	windows, err := TimeWindows(*t, hw.now(), d)
+	return windows, err
+}
+
+// TimeWindows calculates all complete buckets (of duration d)
 // from t until now.
-func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, error) {
+func TimeWindows(start time.Time, end time.Time, d time.Duration) ([]Window, error) {
 	if start.After(end) {
 		return nil, fmt.Errorf("start datetime (%s) must be before end datetime (%s)", start, end)
 	}
@@ -21,7 +58,7 @@ func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, err
 		return nil, nil
 	}
 
-	var buckets []Bucket
+	var buckets []Window
 	currStart := start
 	currEnd := start.Add(d)
 	for {
@@ -29,7 +66,7 @@ func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, err
 			break
 		}
 
-		b := Bucket{
+		b := Window{
 			Start: currStart,
 			End:   currEnd,
 		}
@@ -42,8 +79,8 @@ func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, err
 	return buckets, nil
 }
 
-func LastCompleteBucket(ct time.Time, d time.Duration) Bucket {
-	b := Bucket{}
+func LastCompleteWindow(ct time.Time, d time.Duration) Window {
+	b := Window{}
 	b.End = ct.Truncate(d)
 	b.Start = b.End.Add(-d)
 	return b
