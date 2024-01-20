@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/turbolytics/collector/internal/collector/metrics/sources"
+	"github.com/turbolytics/collector/internal/collector/metrics/sources/mongodb"
+	"github.com/turbolytics/collector/internal/collector/metrics/sources/postgres"
+	prometheus2 "github.com/turbolytics/collector/internal/collector/metrics/sources/prometheus"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
 	"github.com/turbolytics/collector/internal/sinks/file"
 	"github.com/turbolytics/collector/internal/sinks/http"
 	"github.com/turbolytics/collector/internal/sinks/kafka"
-	"github.com/turbolytics/collector/internal/sources"
-	"github.com/turbolytics/collector/internal/sources/mongodb"
-	"github.com/turbolytics/collector/internal/sources/postgres"
-	"github.com/turbolytics/collector/internal/sources/prometheus"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -91,9 +91,9 @@ func initSource(c *Config) error {
 			c.validate,
 		)
 	case sources.TypePrometheus:
-		s, err = prometheus.NewFromGenericConfig(
+		s, err = prometheus2.NewFromGenericConfig(
 			c.Source.Config,
-			prometheus.WithLogger(c.logger),
+			prometheus2.WithLogger(c.logger),
 		)
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)

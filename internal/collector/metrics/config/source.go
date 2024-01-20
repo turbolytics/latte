@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"github.com/turbolytics/collector/internal/sources"
+	"github.com/turbolytics/collector/internal/collector/metrics/sources"
 )
 
 type TypeSourceStrategy string
