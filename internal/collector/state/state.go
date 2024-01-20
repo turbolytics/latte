@@ -16,7 +16,7 @@ const (
 type Invocation struct {
 	CollectorName string
 	Time          time.Time
-	Window        *timeseries.Bucket
+	Window        *timeseries.Window
 }
 
 type Storer interface {

@@ -34,7 +34,7 @@ ORDER BY
 LIMIT 1
 `, collector))
 
-	w := &timeseries.Bucket{}
+	w := &timeseries.Window{}
 	i := &state.Invocation{}
 	err := row.Scan(&i.CollectorName, &i.Time, &w.Start, &w.End)
 	if err != nil {

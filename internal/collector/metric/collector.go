@@ -170,7 +170,7 @@ func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Me
 	return ms, err
 }
 
-func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Bucket) ([]*metrics.Metric, error) {
+func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Window) ([]*metrics.Metric, error) {
 	c.logger.Info(
 		"collector.invokeWindow",
 		zap.String("msg", "invoking for window"),
@@ -216,7 +216,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	// and save.
 	if i == nil {
 		// get the current completed window
-		window := timeseries.LastCompleteBucket(
+		window := timeseries.LastCompleteWindow(
 			c.now(),
 			*(c.Config.Source.Sourcer.Window()),
 		)
@@ -226,7 +226,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 		// Get all buckets that have passed since invocation end
 
 		// truncating the current time to the duration....
-		windows, err := timeseries.TimeBuckets(
+		windows, err := timeseries.TimeWindows(
 			i.Window.End,
 			c.now(),
 			*(c.Config.Source.Sourcer.Window()),

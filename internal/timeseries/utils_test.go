@@ -12,13 +12,13 @@ func TestLastCompleteBucket(t *testing.T) {
 		name           string
 		ct             time.Time
 		d              time.Duration
-		expectedBucket Bucket
+		expectedBucket Window
 	}{
 		{
 			name: "start_before_end_bucket_aligned",
 			ct:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
 			d:    time.Hour * 24,
-			expectedBucket: Bucket{
+			expectedBucket: Window{
 				Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 				End:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
 			},
@@ -27,7 +27,7 @@ func TestLastCompleteBucket(t *testing.T) {
 			name: "start_before_end_bucket_over_end",
 			ct:   time.Date(2024, 1, 2, 1, 15, 0, 0, time.UTC),
 			d:    time.Hour * 24,
-			expectedBucket: Bucket{
+			expectedBucket: Window{
 				Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 				End:   time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
 			},
@@ -36,7 +36,7 @@ func TestLastCompleteBucket(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			bucket := LastCompleteBucket(
+			bucket := LastCompleteWindow(
 				tc.ct,
 				tc.d,
 			)
@@ -51,7 +51,7 @@ func TestTimeBuckets(t *testing.T) {
 		start   time.Time
 		end     time.Time
 		d       time.Duration
-		buckets []Bucket
+		buckets []Window
 		err     error
 	}{
 		{
@@ -76,7 +76,7 @@ func TestTimeBuckets(t *testing.T) {
 			end:   time.Date(2024, 01, 01, 01, 10, 00, 00, time.UTC),
 			d:     time.Minute * 5,
 			err:   nil,
-			buckets: []Bucket{
+			buckets: []Window{
 				{
 					Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
 					End:   time.Date(2024, 1, 1, 1, 5, 0, 0, time.UTC),
@@ -93,7 +93,7 @@ func TestTimeBuckets(t *testing.T) {
 			end:   time.Date(2024, 01, 01, 01, 10, 00, 00, time.UTC),
 			d:     time.Minute * 10,
 			err:   nil,
-			buckets: []Bucket{
+			buckets: []Window{
 				{
 					Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
 					End:   time.Date(2024, 1, 1, 1, 10, 0, 0, time.UTC),
@@ -106,7 +106,7 @@ func TestTimeBuckets(t *testing.T) {
 			end:   time.Date(2024, 01, 01, 01, 12, 00, 00, time.UTC),
 			d:     time.Minute * 10,
 			err:   nil,
-			buckets: []Bucket{
+			buckets: []Window{
 				{
 					Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
 					End:   time.Date(2024, 1, 1, 1, 10, 0, 0, time.UTC),
@@ -119,7 +119,7 @@ func TestTimeBuckets(t *testing.T) {
 			end:   time.Date(2024, 01, 01, 01, 12, 00, 00, time.UTC),
 			d:     time.Minute * 5,
 			err:   nil,
-			buckets: []Bucket{
+			buckets: []Window{
 				{
 					Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
 					End:   time.Date(2024, 1, 1, 1, 5, 0, 0, time.UTC),
@@ -134,7 +134,7 @@ func TestTimeBuckets(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			buckets, err := TimeBuckets(
+			buckets, err := TimeWindows(
 				tc.start,
 				tc.end,
 				tc.d,

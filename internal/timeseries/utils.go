@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-type Bucket struct {
+type Window struct {
 	Start time.Time
 	End   time.Time
 }
 
-// TimeBuckets calculates all complete buckets (of duration d)
+// TimeWindows calculates all complete buckets (of duration d)
 // from t until now.
-func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, error) {
+func TimeWindows(start time.Time, end time.Time, d time.Duration) ([]Window, error) {
 	if start.After(end) {
 		return nil, fmt.Errorf("start datetime (%s) must be before end datetime (%s)", start, end)
 	}
@@ -21,7 +21,7 @@ func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, err
 		return nil, nil
 	}
 
-	var buckets []Bucket
+	var buckets []Window
 	currStart := start
 	currEnd := start.Add(d)
 	for {
@@ -29,7 +29,7 @@ func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, err
 			break
 		}
 
-		b := Bucket{
+		b := Window{
 			Start: currStart,
 			End:   currEnd,
 		}
@@ -42,8 +42,8 @@ func TimeBuckets(start time.Time, end time.Time, d time.Duration) ([]Bucket, err
 	return buckets, nil
 }
 
-func LastCompleteBucket(ct time.Time, d time.Duration) Bucket {
-	b := Bucket{}
+func LastCompleteWindow(ct time.Time, d time.Duration) Window {
+	b := Window{}
 	b.End = ct.Truncate(d)
 	b.Start = b.End.Add(-d)
 	return b
