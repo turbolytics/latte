@@ -4,20 +4,19 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/turbolytics/collector/internal/collector/metric/sources"
+	"github.com/turbolytics/collector/internal/collector/metric/sources/mongodb"
+	"github.com/turbolytics/collector/internal/collector/metric/sources/postgres"
+	"github.com/turbolytics/collector/internal/collector/metric/sources/prometheus"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
 	"github.com/turbolytics/collector/internal/sinks/file"
 	"github.com/turbolytics/collector/internal/sinks/http"
 	"github.com/turbolytics/collector/internal/sinks/kafka"
-	"github.com/turbolytics/collector/internal/sources"
-	"github.com/turbolytics/collector/internal/sources/mongodb"
-	"github.com/turbolytics/collector/internal/sources/postgres"
-	"github.com/turbolytics/collector/internal/sources/prometheus"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path/filepath"
 	"text/template"
 )
 
@@ -174,23 +173,6 @@ func parseTemplate(bs []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func NewFromGlob(glob string, opts ...Option) ([]*Config, error) {
-	files, err := filepath.Glob(glob)
-	if err != nil {
-		return nil, err
-	}
-	var configs []*Config
-
-	for _, fName := range files {
-		c, err := NewFromFile(fName, opts...)
-		if err != nil {
-			return nil, err
-		}
-		configs = append(configs, c)
-	}
-	return configs, nil
-}
-
 func defaults(c *Config) error {
 	(&c.Source).SetDefaults()
 
@@ -210,15 +192,6 @@ func validate(c Config) error {
 		}
 	}
 	return nil
-}
-
-func NewFromFile(name string, opts ...Option) (*Config, error) {
-	fmt.Printf("loading config from file: %q\n", name)
-	bs, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	return New(bs, opts...)
 }
 
 // New initializes a config from yaml bytes.

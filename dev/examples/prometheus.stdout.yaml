@@ -1,5 +1,8 @@
 name: service_availability_24h
 
+collector:
+  type: metric
+
 state_store:
   type: memory
 
@@ -34,9 +37,6 @@ source:
         prom_metrics
 
 sinks:
-  console:
-    type: console
-
   audit:
     type: file
     config:

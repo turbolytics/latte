@@ -1,5 +1,8 @@
 name: mongo_users_10s
 
+collector:
+  type: metric
+
 metric:
   name: core.users.total
   type: COUNT
@@ -33,8 +36,10 @@ source:
       ]
 
 sinks:
-  console:
-    type: console
+  audit:
+    type: file
+    config:
+      path: /tmp/log/signals.audit.log
 
   vector:
     type: http

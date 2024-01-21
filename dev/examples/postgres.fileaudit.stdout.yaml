@@ -1,5 +1,8 @@
 name: postgres_users_total_24h
 
+collector:
+  type: metric
+
 metric:
   name: core.users.total
   type: COUNT
@@ -24,13 +27,7 @@ source:
         account
       
 sinks:
-  console:
-    type: console
-
   audit:
-    # audit log for data durability and redriving
-    # can be combined with linux logrotate tools:
-    # https://www.redhat.com/sysadmin/setting-logrotate
     type: file
     config:
       path: /tmp/log/signals.audit.log

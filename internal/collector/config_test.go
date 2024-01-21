@@ -1,4 +1,4 @@
-package config
+package collector
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -11,7 +11,7 @@ var exampleDir string
 
 func init() {
 	currDir, _ := os.Getwd()
-	exampleDir = path.Join(currDir, "..", "..", "..", "..", "dev", "examples")
+	exampleDir = path.Join(currDir, "..", "..", "dev", "examples")
 }
 
 func TestNewConfigFromFile(t *testing.T) {
