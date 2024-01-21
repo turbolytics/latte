@@ -7,7 +7,7 @@ import (
 	"github.com/turbolytics/collector/internal/collector/metric/sources"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/mongodb"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/postgres"
-	prometheus2 "github.com/turbolytics/collector/internal/collector/metric/sources/prometheus"
+	"github.com/turbolytics/collector/internal/collector/metric/sources/prometheus"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
@@ -90,9 +90,9 @@ func initSource(c *Config) error {
 			c.validate,
 		)
 	case sources.TypePrometheus:
-		s, err = prometheus2.NewFromGenericConfig(
+		s, err = prometheus.NewFromGenericConfig(
 			c.Source.Config,
-			prometheus2.WithLogger(c.logger),
+			prometheus.WithLogger(c.logger),
 		)
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)

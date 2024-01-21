@@ -23,6 +23,7 @@ func NewInvokeCmd() *cobra.Command {
 			c, err := collector.NewFromFile(
 				configPath,
 				collector.WithJustValidation(true),
+				collector.WithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
