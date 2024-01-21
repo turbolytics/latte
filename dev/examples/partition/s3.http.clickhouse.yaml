@@ -1,0 +1,22 @@
+name: clickhouse_s3_loader_1m
+
+collector:
+  type: partition
+
+schedule:
+  interval: 1m
+
+source:
+  type: partition.s3
+  config:
+    bucket: ??
+    region: ??
+    prefix: ??
+    partition: ??
+
+sinks:
+  http:
+    uri: ???
+    method: POST
+    query: ???
+
