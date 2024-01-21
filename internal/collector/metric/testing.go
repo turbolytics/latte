@@ -1,4 +1,4 @@
-package collector
+package metric
 
 type TestSink struct {
 	Closes int

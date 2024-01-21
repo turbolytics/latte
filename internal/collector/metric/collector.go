@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/turbolytics/collector/internal/collector"
 	"github.com/turbolytics/collector/internal/collector/metric/config"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/metrics"
@@ -136,8 +135,7 @@ func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 // InvokeHandleError will log any Invoke errors and not return them.
 // Useful for async scheduling.
 func (c *Collector) InvokeHandleError(ctx context.Context) {
-	_, err := c.Invoke(ctx)
-	if err != nil {
+	if err := c.Invoke(ctx); err != nil {
 		c.logger.Error(err.Error())
 	}
 }
@@ -246,47 +244,6 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 		)
 		return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
 	}
-	/*
-		// no previous invocations exist, just perform the current collection
-		// and save.
-		if i == nil {
-			// get the current completed window
-			window := timeseries.LastCompleteWindow(
-				c.now(),
-				*(c.Config.Source.Sourcer.Window()),
-			)
-			ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
-		} else {
-			// a previous invocation exists.
-			// Get all buckets that have passed since invocation end
-
-			// truncating the current time to the duration....
-			windows, err := timeseries.TimeWindows(
-				i.Window.End,
-				c.now(),
-				*(c.Config.Source.Sourcer.Window()),
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			// if no window has passed return and wait
-			if len(windows) == 0 {
-				return nil, nil
-			} else if len(windows) > 1 {
-				c.logger.Error(
-					"collector.invokeWindow",
-					zap.String("msg", "multiple windows detected"),
-					zap.Int("windows", len(windows)),
-					zap.String("id", id.String()),
-					zap.String("name", c.Config.Name),
-				)
-				return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
-			}
-			window := windows[0]
-			ms, err = c.invokeWindowSourceAndSave(ctx, id, window)
-		}
-	*/
 
 	if err = c.Transform(ms); err != nil {
 		return ms, err
@@ -299,7 +256,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	return ms, err
 }
 
-func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error) {
+func (c *Collector) Invoke(ctx context.Context) (err error) {
 	start := time.Now().UTC()
 
 	histogram, _ := meter.Float64Histogram(
@@ -344,14 +301,14 @@ func (c *Collector) Invoke(ctx context.Context) (ms []*metrics.Metric, err error
 	// invocations for each window that needs to be executed.
 	switch c.Config.Source.Strategy {
 	case config.TypeSourceStrategyTick:
-		ms, err = c.invokeTick(ctx, id)
+		_, err = c.invokeTick(ctx, id)
 	case config.TypeSourceStrategyWindow:
-		ms, err = c.invokeWindow(ctx, id)
+		_, err = c.invokeWindow(ctx, id)
 	default:
-		return nil, fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
+		return fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
 	}
 
-	return ms, err
+	return err
 }
 
 type Option func(*Collector)
@@ -373,16 +330,4 @@ func New(config *config.Config, opts ...Option) (*Collector, error) {
 		opt(c)
 	}
 	return c, nil
-}
-
-func NewFromConfigs(configs []*config.Config, opts ...Option) ([]collector.Collector, error) {
-	var cs []collector.Collector
-	for _, conf := range configs {
-		coll, err := New(conf, opts...)
-		if err != nil {
-			return nil, err
-		}
-		cs = append(cs, coll)
-	}
-	return cs, nil
 }

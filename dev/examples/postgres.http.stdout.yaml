@@ -1,5 +1,8 @@
 name: postgres_users_total_30s
 
+collector:
+  type: metric
+
 metric:
   name: core.users.total
   type: COUNT
@@ -24,8 +27,10 @@ source:
         account
       
 sinks:
-  console:
-    type: console
+  audit:
+    type: file
+    config:
+      path: /tmp/log/signals.audit.log
 
   vector:
     type: http

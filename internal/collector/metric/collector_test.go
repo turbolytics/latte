@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/collector"
 	"github.com/turbolytics/collector/internal/collector/metric/config"
 	"github.com/turbolytics/collector/internal/collector/metric/sources"
 	"github.com/turbolytics/collector/internal/collector/state"
@@ -44,7 +43,7 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 }
 
 func TestCollector_Close(t *testing.T) {
-	ts := &collector.TestSink{}
+	ts := &TestSink{}
 	coll := &Collector{
 		Config: &config.Config{
 			Sinks: map[string]config.Sink{

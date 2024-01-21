@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path/filepath"
 	"text/template"
 )
 
@@ -174,23 +173,6 @@ func parseTemplate(bs []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func NewFromGlob(glob string, opts ...Option) ([]*Config, error) {
-	files, err := filepath.Glob(glob)
-	if err != nil {
-		return nil, err
-	}
-	var configs []*Config
-
-	for _, fName := range files {
-		c, err := NewFromFile(fName, opts...)
-		if err != nil {
-			return nil, err
-		}
-		configs = append(configs, c)
-	}
-	return configs, nil
-}
-
 func defaults(c *Config) error {
 	(&c.Source).SetDefaults()
 
@@ -210,15 +192,6 @@ func validate(c Config) error {
 		}
 	}
 	return nil
-}
-
-func NewFromFile(name string, opts ...Option) (*Config, error) {
-	fmt.Printf("loading config from file: %q\n", name)
-	bs, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	return New(bs, opts...)
 }
 
 // New initializes a config from yaml bytes.
