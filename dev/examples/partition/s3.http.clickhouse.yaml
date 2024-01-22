@@ -4,16 +4,17 @@ collector:
   type: partition
 
 schedule:
-  interval: 1m
+  interval: 30s
 
 source:
   type: partition.s3
   strategy: historic_tumbling_window
   config:
-    bucket: ??
-    region: ??
-    prefix: ??
-    partition: ??
+    validate_exists: false
+    bucket: latte-test-bucket
+    region: us-east-2
+    prefix: data-source
+    partition: /year={{.Year}}/month={{.Month}}/day={{.Day}}
 
 sinks:
   http:

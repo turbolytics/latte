@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/turbolytics/collector/internal/collector/metric/config"
 	"github.com/turbolytics/collector/internal/collector/metric/sources"
+	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/collector/state/memory"
 	"github.com/turbolytics/collector/internal/metrics"
@@ -74,9 +75,9 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 
 	coll := &Collector{
 		Config: &config.Config{
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyTick,
+			Source: source.Source{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyTick,
 			},
 		},
 	}
@@ -110,9 +111,9 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 			StateStore: config.StateStore{
 				Storer: ss,
 			},
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyHistoricTumblingWindow,
+			Source: source.Source{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
 		},
 	}
@@ -176,9 +177,9 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 			StateStore: config.StateStore{
 				Storer: ss,
 			},
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyHistoricTumblingWindow,
+			Source: source.Source{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
 		},
 	}
@@ -224,9 +225,9 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 			StateStore: config.StateStore{
 				Storer: ss,
 			},
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyHistoricTumblingWindow,
+			Source: source.Source{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
 		},
 	}

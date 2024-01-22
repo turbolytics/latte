@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/turbolytics/collector/internal/collector/metric/config"
+	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/obs"
@@ -88,7 +89,7 @@ func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error
 
 	}()
 
-	ms, err = c.Config.Source.Sourcer.Source(ctx)
+	ms, err = c.Config.Source.MetricSourcer.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +221,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	)
 	windows, err := hw.FullWindowsSince(
 		lastWindowEnd,
-		*(c.Config.Source.Sourcer.Window()),
+		*(c.Config.Source.MetricSourcer.Window()),
 	)
 	if err != nil {
 		return nil, err
@@ -300,9 +301,9 @@ func (c *Collector) Invoke(ctx context.Context) (err error) {
 	// The windowing strategy may result in multiple source
 	// invocations for each window that needs to be executed.
 	switch c.Config.Source.Strategy {
-	case config.TypeSourceStrategyTick:
+	case source.TypeStrategyTick:
 		_, err = c.invokeTick(ctx, id)
-	case config.TypeSourceStrategyHistoricTumblingWindow:
+	case source.TypeStrategyHistoricTumblingWindow:
 		_, err = c.invokeWindow(ctx, id)
 	default:
 		return fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)

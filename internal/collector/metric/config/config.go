@@ -8,6 +8,7 @@ import (
 	"github.com/turbolytics/collector/internal/collector/metric/sources/mongodb"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/postgres"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/prometheus"
+	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
@@ -50,7 +51,7 @@ type Config struct {
 	Name       string
 	Metric     Metric
 	Schedule   Schedule
-	Source     Source
+	Source     source.Source
 	Sinks      map[string]Sink
 	StateStore StateStore `yaml:"state_store"`
 
@@ -78,18 +79,18 @@ func initSource(c *Config) error {
 	var s sources.MetricSourcer
 	var err error
 	switch c.Source.Type {
-	case sources.TypePostgres:
+	case source.TypePostgres:
 		s, err = postgres.NewFromGenericConfig(
 			c.Source.Config,
 			c.validate,
 		)
-	case sources.TypeMongoDB:
+	case source.TypeMongoDB:
 		s, err = mongodb.NewFromGenericConfig(
 			context.TODO(),
 			c.Source.Config,
 			c.validate,
 		)
-	case sources.TypePrometheus:
+	case source.TypePrometheus:
 		s, err = prometheus.NewFromGenericConfig(
 			c.Source.Config,
 			prometheus.WithLogger(c.logger),
@@ -102,7 +103,7 @@ func initSource(c *Config) error {
 		return err
 	}
 
-	c.Source.Sourcer = s
+	c.Source.MetricSourcer = s
 	return nil
 }
 
