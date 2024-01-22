@@ -36,11 +36,6 @@ type Metric struct {
 	Tags []Tag
 }
 
-type Collector struct {
-	Type   string // enum
-	Config map[string]any
-}
-
 type Sink struct {
 	Type   sinks.Type
 	Sinker sinks.Sinker
