@@ -65,7 +65,7 @@ Signals collector needs to know where to reach prometheus and the query to execu
 
 ```yaml
   type: prometheus
-  strategy: window
+  strategy: historic_tumbling_window 
   config:
     uri: 'http://{{ getEnvOrDefault "SC_PROM_HOST" "localhost" }}:9090/api/v1/query'
     query: 'sum(round(increase(collector_invoke_count_total[24h]))) by (result_status_code)'

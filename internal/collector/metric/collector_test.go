@@ -112,7 +112,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 			},
 			Source: config.Source{
 				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyWindow,
+				Strategy: config.TypeSourceStrategyHistoricTumblingWindow,
 			},
 		},
 	}
@@ -178,7 +178,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 			},
 			Source: config.Source{
 				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyWindow,
+				Strategy: config.TypeSourceStrategyHistoricTumblingWindow,
 			},
 		},
 	}
@@ -226,7 +226,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 			},
 			Source: config.Source{
 				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyWindow,
+				Strategy: config.TypeSourceStrategyHistoricTumblingWindow,
 			},
 		},
 	}

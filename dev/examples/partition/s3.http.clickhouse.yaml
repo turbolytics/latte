@@ -8,6 +8,7 @@ schedule:
 
 source:
   type: partition.s3
+  strategy: historic_tumbling_window
   config:
     bucket: ??
     region: ??

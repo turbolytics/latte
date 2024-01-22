@@ -302,7 +302,7 @@ func (c *Collector) Invoke(ctx context.Context) (err error) {
 	switch c.Config.Source.Strategy {
 	case config.TypeSourceStrategyTick:
 		_, err = c.invokeTick(ctx, id)
-	case config.TypeSourceStrategyWindow:
+	case config.TypeSourceStrategyHistoricTumblingWindow:
 		_, err = c.invokeWindow(ctx, id)
 	default:
 		return fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
