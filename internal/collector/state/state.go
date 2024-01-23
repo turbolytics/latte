@@ -27,21 +27,35 @@ type Storer interface {
 	SaveInvocation(invocation *Invocation) error
 }
 
-type Store struct {
+type Config struct {
 	Type   StoreType
 	Storer Storer
 	Config map[string]any
 }
 
-func (s Store) Validate() error {
+func (c Config) Validate() error {
 	ts := map[StoreType]struct{}{
 		"":              {},
 		StoreTypeMemory: {},
 	}
 
-	if _, ok := ts[s.Type]; !ok {
-		fmt.Errorf("unknown strategy: %v", s.Type)
+	if _, ok := ts[c.Type]; !ok {
+		fmt.Errorf("unknown strategy: %v", c.Type)
 	}
 
+	return nil
+}
+
+func (c *Config) Init() error {
+	var s Storer
+	var err error
+	switch c.Type {
+	case StoreTypeMemory:
+		s, err = NewMemoryStoreFromGenericConfig(c.Config)
+	}
+	if err != nil {
+		return err
+	}
+	c.Storer = s
 	return nil
 }

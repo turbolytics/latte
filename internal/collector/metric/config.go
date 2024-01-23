@@ -1,16 +1,16 @@
 package metric
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/mongodb"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/postgres"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/prometheus"
 	"github.com/turbolytics/collector/internal/collector/schedule"
+	"github.com/turbolytics/collector/internal/collector/sink"
 	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
-	"github.com/turbolytics/collector/internal/collector/state/memory"
+	"github.com/turbolytics/collector/internal/collector/template"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
@@ -19,8 +19,6 @@ import (
 	"github.com/turbolytics/collector/internal/sinks/kafka"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-	"os"
-	"text/template"
 )
 
 type validater interface {
@@ -38,19 +36,13 @@ type Metric struct {
 	Tags []Tag
 }
 
-type Sink struct {
-	Type   sinks.Type
-	Sinker sinks.Sinker
-	Config map[string]any
-}
-
 type Config struct {
 	Name       string
 	Metric     Metric
 	Schedule   schedule.Schedule
 	Source     source.Source
-	Sinks      map[string]Sink
-	StateStore state.Store `yaml:"state_store"`
+	Sinks      map[string]sink.Sink
+	StateStore state.Config `yaml:"state_store"`
 
 	logger *zap.Logger
 	// validate will skip initializing network dependencies
@@ -144,48 +136,6 @@ func initSinks(c *Config) error {
 	return nil
 }
 
-func initStateStore(c *Config) error {
-	var s state.Storer
-	var err error
-	switch c.StateStore.Type {
-	case state.StoreTypeMemory:
-		s, err = memory.NewFromGenericConfig(c.StateStore.Config)
-	}
-
-	if err != nil {
-		return err
-	}
-	c.StateStore.Storer = s
-	return nil
-}
-
-func parseTemplate(bs []byte) ([]byte, error) {
-	funcMap := template.FuncMap{
-		"getEnv": func(key string) string {
-			return os.Getenv(key)
-		},
-		"getEnvOrDefault": func(key string, d string) string {
-			envVal := os.Getenv(key)
-			if envVal == "" {
-				return d
-			}
-
-			return envVal
-		},
-	}
-	t, err := template.New("config").Funcs(funcMap).Parse(string(bs))
-	if err != nil {
-		return nil, err
-	}
-
-	var out bytes.Buffer
-	if err := t.Execute(&out, nil); err != nil {
-		return nil, err
-	}
-
-	return out.Bytes(), nil
-}
-
 func defaults(c *Config) error {
 	(&c.Source).SetDefaults()
 
@@ -193,13 +143,13 @@ func defaults(c *Config) error {
 }
 
 func validate(c Config) error {
-	validators := []validater{
+	validaters := []validater{
 		c.Schedule,
 		c.Source,
 		c.StateStore,
 	}
 
-	for _, v := range validators {
+	for _, v := range validaters {
 		if err := v.Validate(); err != nil {
 			return err
 		}
@@ -216,7 +166,7 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		opt(&conf)
 	}
 
-	bs, err := parseTemplate(raw)
+	bs, err := template.Parse(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +183,7 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		return nil, err
 	}
 
-	if err := initStateStore(&conf); err != nil {
+	if err := conf.StateStore.Init(); err != nil {
 		return nil, err
 	}
 
