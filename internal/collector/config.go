@@ -3,7 +3,6 @@ package collector
 import (
 	"fmt"
 	"github.com/turbolytics/collector/internal/collector/metric"
-	metricConfig "github.com/turbolytics/collector/internal/collector/metric/config"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -85,17 +84,17 @@ func New(bs []byte, opts ...Option) (Collector, error) {
 	var err error
 	switch conf.Collector.Type {
 	case TypeMetric:
-		mc, err := metricConfig.New(
+		mc, err := metric.NewConfig(
 			bs,
-			metricConfig.WithJustValidation(conf.validate),
-			metricConfig.WithLogger(conf.logger),
+			metric.ConfigWithJustValidation(conf.validate),
+			metric.ConfigWithLogger(conf.logger),
 		)
 		if err != nil {
 			return nil, err
 		}
-		c, err = metric.New(
+		c, err = metric.NewCollector(
 			mc,
-			metric.WithLogger(conf.logger),
+			metric.CollectorWithLogger(conf.logger),
 		)
 
 	default:

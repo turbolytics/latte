@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/collector/metric/config"
 	"github.com/turbolytics/collector/internal/collector/metric/sources"
 	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
@@ -18,9 +17,9 @@ import (
 )
 
 func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
-	coll, err := New(&config.Config{
-		Metric: config.Metric{
-			Tags: []config.Tag{
+	coll, err := NewCollector(&Config{
+		Metric: Metric{
+			Tags: []Tag{
 				{"key1", "val1"},
 				{"key2", "val2"},
 			},
@@ -46,8 +45,8 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 func TestCollector_Close(t *testing.T) {
 	ts := &TestSink{}
 	coll := &Collector{
-		Config: &config.Config{
-			Sinks: map[string]config.Sink{
+		Config: &Config{
+			Sinks: map[string]Sink{
 				"sink1": {
 					Sinker: ts,
 				},
@@ -74,7 +73,7 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 	}
 
 	coll := &Collector{
-		Config: &config.Config{
+		Config: &Config{
 			Source: source.Source{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyTick,
@@ -106,7 +105,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		now: func() time.Time {
 			return now
 		},
-		Config: &config.Config{
+		Config: &Config{
 			Name: "test_collector",
 			StateStore: state.Store{
 				Storer: ss,
@@ -172,7 +171,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		now: func() time.Time {
 			return now
 		},
-		Config: &config.Config{
+		Config: &Config{
 			Name: "test_collector",
 			StateStore: state.Store{
 				Storer: ss,
@@ -220,7 +219,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		now: func() time.Time {
 			return now
 		},
-		Config: &config.Config{
+		Config: &Config{
 			Name: "test_collector",
 			StateStore: state.Store{
 				Storer: ss,

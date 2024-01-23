@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/turbolytics/collector/internal/collector/metric/config"
 	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/metrics"
@@ -21,7 +20,7 @@ import (
 var meter = otel.Meter("signals-collector")
 
 type Collector struct {
-	Config *config.Config
+	Config *Config
 
 	logger *zap.Logger
 	now    func() time.Time
@@ -312,15 +311,15 @@ func (c *Collector) Invoke(ctx context.Context) (err error) {
 	return err
 }
 
-type Option func(*Collector)
+type CollectorOption func(*Collector)
 
-func WithLogger(l *zap.Logger) Option {
+func CollectorWithLogger(l *zap.Logger) CollectorOption {
 	return func(c *Collector) {
 		c.logger = l
 	}
 }
 
-func New(config *config.Config, opts ...Option) (*Collector, error) {
+func NewCollector(config *Config, opts ...CollectorOption) (*Collector, error) {
 	c := &Collector{
 		Config: config,
 		now: func() time.Time {

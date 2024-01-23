@@ -1,4 +1,4 @@
-package config
+package metric
 
 import (
 	"bytes"
@@ -57,15 +57,15 @@ type Config struct {
 	validate bool
 }
 
-type Option func(*Config)
+type ConfigOption func(*Config)
 
-func WithJustValidation(validate bool) Option {
+func ConfigWithJustValidation(validate bool) ConfigOption {
 	return func(c *Config) {
 		c.validate = validate
 	}
 }
 
-func WithLogger(l *zap.Logger) Option {
+func ConfigWithLogger(l *zap.Logger) ConfigOption {
 	return func(c *Config) {
 		c.logger = l
 	}
@@ -207,9 +207,9 @@ func validate(c Config) error {
 	return nil
 }
 
-// New initializes a config from yaml bytes.
-// New initializes all subtypes as well.
-func New(raw []byte, opts ...Option) (*Config, error) {
+// NewConfig initializes a config from yaml bytes.
+// NewConfig initializes all subtypes as well.
+func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 	var conf Config
 
 	for _, opt := range opts {
