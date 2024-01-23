@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/turbolytics/collector/internal/collector/metric/sources"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/mongodb"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/postgres"
 	"github.com/turbolytics/collector/internal/collector/metric/sources/prometheus"
+	"github.com/turbolytics/collector/internal/collector/schedule"
 	"github.com/turbolytics/collector/internal/collector/source"
+	"github.com/turbolytics/collector/internal/collector/state"
+	"github.com/turbolytics/collector/internal/collector/state/memory"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/sinks"
 	"github.com/turbolytics/collector/internal/sinks/console"
@@ -45,10 +47,10 @@ type Sink struct {
 type Config struct {
 	Name       string
 	Metric     Metric
-	Schedule   Schedule
+	Schedule   schedule.Schedule
 	Source     source.Source
 	Sinks      map[string]Sink
-	StateStore StateStore `yaml:"state_store"`
+	StateStore state.Store `yaml:"state_store"`
 
 	logger *zap.Logger
 	// validate will skip initializing network dependencies
@@ -71,7 +73,7 @@ func WithLogger(l *zap.Logger) Option {
 
 // initSource initializes the correct source.
 func initSource(c *Config) error {
-	var s sources.MetricSourcer
+	var s source.MetricSourcer
 	var err error
 	switch c.Source.Type {
 	case source.TypePostgres:
@@ -139,6 +141,21 @@ func initSinks(c *Config) error {
 			c.Sinks[k] = v
 		}
 	}
+	return nil
+}
+
+func initStateStore(c *Config) error {
+	var s state.Storer
+	var err error
+	switch c.StateStore.Type {
+	case state.StoreTypeMemory:
+		s, err = memory.NewFromGenericConfig(c.StateStore.Config)
+	}
+
+	if err != nil {
+		return err
+	}
+	c.StateStore.Storer = s
 	return nil
 }
 

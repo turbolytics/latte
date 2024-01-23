@@ -108,7 +108,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		},
 		Config: &config.Config{
 			Name: "test_collector",
-			StateStore: config.StateStore{
+			StateStore: state.Store{
 				Storer: ss,
 			},
 			Source: source.Source{
@@ -174,7 +174,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		},
 		Config: &config.Config{
 			Name: "test_collector",
-			StateStore: config.StateStore{
+			StateStore: state.Store{
 				Storer: ss,
 			},
 			Source: source.Source{
@@ -222,7 +222,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		},
 		Config: &config.Config{
 			Name: "test_collector",
-			StateStore: config.StateStore{
+			StateStore: state.Store{
 				Storer: ss,
 			},
 			Source: source.Source{

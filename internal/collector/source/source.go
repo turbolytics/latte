@@ -1,38 +1,52 @@
 package source
 
 import (
+	"context"
 	"fmt"
-	"github.com/turbolytics/collector/internal/collector/metric/sources"
+	"github.com/turbolytics/collector/internal/metrics"
+	"time"
 )
 
 type Type string
 
 const (
-	TypePostgres   Type = "postgres"
-	TypeMongoDB    Type = "mongodb"
-	TypePrometheus Type = "prometheus"
+	TypeMongoDB     Type = "mongodb"
+	TypePartitionS3 Type = "partition.s3"
+	TypePostgres    Type = "postgres"
+	TypePrometheus  Type = "prometheus"
 )
 
 type TypeStrategy string
 
 const (
 	TypeStrategyHistoricTumblingWindow TypeStrategy = "historic_tumbling_window"
+	TypeStrategyIncremental            TypeStrategy = "incremental"
 	TypeStrategyTick                   TypeStrategy = "tick"
 )
 
-// TODO need to clean all of this up
+type MetricSourcer interface {
+	Source(ctx context.Context) ([]*metrics.Metric, error)
+	Window() *time.Duration
+}
+
+type PartitionSourcer interface {
+	Source(ctx context.Context) error
+}
+
 type Source struct {
 	Strategy TypeStrategy
 	Config   map[string]any
 	Type     Type
 
-	MetricSourcer sources.MetricSourcer
+	MetricSourcer    MetricSourcer
+	PartitionSourcer PartitionSourcer
 }
 
 func (s Source) Validate() error {
 	vs := map[TypeStrategy]struct{}{
 		TypeStrategyTick:                   {},
 		TypeStrategyHistoricTumblingWindow: {},
+		TypeStrategyIncremental:            {},
 	}
 
 	if _, ok := vs[s.Strategy]; !ok {

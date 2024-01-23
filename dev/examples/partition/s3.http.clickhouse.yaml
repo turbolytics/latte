@@ -6,6 +6,9 @@ collector:
 schedule:
   interval: 30s
 
+state_store:
+  type: memory
+
 source:
   type: partition.s3
   strategy: historic_tumbling_window

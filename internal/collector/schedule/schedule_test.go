@@ -1,18 +1,11 @@
-package config
+package schedule
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/collector/source"
 	"testing"
 	"time"
 )
-
-func TestInvocation_SetDefaults_Schedule(t *testing.T) {
-	conf := &Config{}
-	defaults(conf)
-	assert.Equal(t, source.TypeStrategyTick, conf.Source.Strategy)
-}
 
 func TestSchedule_Validate(t *testing.T) {
 	h := time.Hour
