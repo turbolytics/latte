@@ -61,6 +61,16 @@ func validate(c Config) error {
 	return nil
 }
 
+func initSinks(c *Config) error {
+	for k, v := range c.Sinks {
+		if err := v.Init(c.validate); err != nil {
+			return err
+		}
+		c.Sinks[k] = v
+	}
+	return nil
+}
+
 // NewConfig initializes a config from yaml bytes.
 // NewConfig initializes all subtypes as well.
 func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
@@ -92,6 +102,10 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 	}
 
 	if err := conf.Source.Init(); err != nil {
+		return nil, err
+	}
+
+	if err := initSinks(&conf); err != nil {
 		return nil, err
 	}
 

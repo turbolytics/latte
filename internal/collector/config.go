@@ -3,6 +3,7 @@ package collector
 import (
 	"fmt"
 	"github.com/turbolytics/collector/internal/collector/metric"
+	"github.com/turbolytics/collector/internal/collector/partition"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -96,6 +97,15 @@ func New(bs []byte, opts ...Option) (Collector, error) {
 			mc,
 			metric.CollectorWithLogger(conf.logger),
 		)
+	case TypePartition:
+		_, err := partition.NewConfig(
+			bs,
+			partition.ConfigWithJustValidation(conf.validate),
+			partition.ConfigWithLogger(conf.logger),
+		)
+		if err != nil {
+			return nil, err
+		}
 
 	default:
 		return nil, fmt.Errorf("collector type: %v not supported", conf.Collector.Type)
