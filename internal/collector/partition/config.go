@@ -14,8 +14,8 @@ type Config struct {
 	Name       string
 	Schedule   schedule.Schedule
 	StateStore state.Config `yaml:"state_store"`
-	Source     source.Source
-	Sinks      map[string]sink.Sink
+	Source     source.Config
+	Sinks      map[string]sink.Config
 
 	logger *zap.Logger
 	// validate will skip initializing network dependencies
@@ -88,6 +88,10 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 	}
 
 	if err := conf.StateStore.Init(); err != nil {
+		return nil, err
+	}
+
+	if err := conf.Source.Init(); err != nil {
 		return nil, err
 	}
 

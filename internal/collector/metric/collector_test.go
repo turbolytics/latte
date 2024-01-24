@@ -46,7 +46,7 @@ func TestCollector_Close(t *testing.T) {
 	ts := &TestSink{}
 	coll := &Collector{
 		Config: &Config{
-			Sinks: map[string]sink.Sink{
+			Sinks: map[string]sink.Config{
 				"sink1": {
 					Sinker: ts,
 				},
@@ -74,7 +74,7 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 
 	coll := &Collector{
 		Config: &Config{
-			Source: source.Source{
+			Source: source.Config{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyTick,
 			},
@@ -110,7 +110,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 			StateStore: state.Config{
 				Storer: ss,
 			},
-			Source: source.Source{
+			Source: source.Config{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -176,7 +176,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 			StateStore: state.Config{
 				Storer: ss,
 			},
-			Source: source.Source{
+			Source: source.Config{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -224,7 +224,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 			StateStore: state.Config{
 				Storer: ss,
 			},
-			Source: source.Source{
+			Source: source.Config{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},

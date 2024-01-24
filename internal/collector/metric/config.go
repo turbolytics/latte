@@ -12,11 +12,6 @@ import (
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/collector/template"
 	"github.com/turbolytics/collector/internal/metrics"
-	"github.com/turbolytics/collector/internal/sinks"
-	"github.com/turbolytics/collector/internal/sinks/console"
-	"github.com/turbolytics/collector/internal/sinks/file"
-	"github.com/turbolytics/collector/internal/sinks/http"
-	"github.com/turbolytics/collector/internal/sinks/kafka"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -40,8 +35,8 @@ type Config struct {
 	Name       string
 	Metric     Metric
 	Schedule   schedule.Schedule
-	Source     source.Source
-	Sinks      map[string]sink.Sink
+	Source     source.Config
+	Sinks      map[string]sink.Config
 	StateStore state.Config `yaml:"state_store"`
 
 	logger *zap.Logger
@@ -99,39 +94,10 @@ func initSource(c *Config) error {
 // initSinks initializes all the outputs
 func initSinks(c *Config) error {
 	for k, v := range c.Sinks {
-		switch v.Type {
-		case sinks.TypeConsole:
-			sink, err := console.NewFromGenericConfig(v.Config)
-			if err != nil {
-				return err
-			}
-			v.Sinker = sink
-			c.Sinks[k] = v
-		case sinks.TypeKafka:
-			sink, err := kafka.NewFromGenericConfig(v.Config)
-			if err != nil {
-				return err
-			}
-			v.Sinker = sink
-			c.Sinks[k] = v
-		case sinks.TypeHTTP:
-			sink, err := http.NewFromGenericConfig(v.Config)
-			if err != nil {
-				return err
-			}
-			v.Sinker = sink
-			c.Sinks[k] = v
-		case sinks.TypeFile:
-			sink, err := file.NewFromGenericConfig(
-				v.Config,
-				c.validate,
-			)
-			if err != nil {
-				return err
-			}
-			v.Sinker = sink
-			c.Sinks[k] = v
+		if err := v.Init(c.validate); err != nil {
+			return err
 		}
+		c.Sinks[k] = v
 	}
 	return nil
 }

@@ -3,7 +3,9 @@ package source
 import (
 	"context"
 	"fmt"
+	"github.com/turbolytics/collector/internal/collector/partition/sources/s3"
 	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/collector/internal/partition"
 	"time"
 )
 
@@ -30,10 +32,10 @@ type MetricSourcer interface {
 }
 
 type PartitionSourcer interface {
-	Source(ctx context.Context) error
+	Source(ctx context.Context) (*partition.Partition, error)
 }
 
-type Source struct {
+type Config struct {
 	Strategy TypeStrategy
 	Config   map[string]any
 	Type     Type
@@ -42,21 +44,37 @@ type Source struct {
 	PartitionSourcer PartitionSourcer
 }
 
-func (s Source) Validate() error {
+func (c Config) Validate() error {
 	vs := map[TypeStrategy]struct{}{
 		TypeStrategyTick:                   {},
 		TypeStrategyHistoricTumblingWindow: {},
 		TypeStrategyIncremental:            {},
 	}
 
-	if _, ok := vs[s.Strategy]; !ok {
-		return fmt.Errorf("unknown strategy: %q", s.Strategy)
+	if _, ok := vs[c.Strategy]; !ok {
+		return fmt.Errorf("unknown strategy: %q", c.Strategy)
 	}
 	return nil
 }
 
-func (s *Source) SetDefaults() {
-	if s.Strategy == "" {
-		s.Strategy = TypeStrategyTick
+func (c *Config) SetDefaults() {
+	if c.Strategy == "" {
+		c.Strategy = TypeStrategyTick
 	}
+}
+
+func (c *Config) Init() error {
+	var s PartitionSourcer
+	var err error
+	switch c.Type {
+	case TypePartitionS3:
+		s, err = s3.NewFromGenericConfig(
+			c.Config,
+		)
+	}
+	if err != nil {
+		return err
+	}
+	c.PartitionSourcer = s
+	return nil
 }
