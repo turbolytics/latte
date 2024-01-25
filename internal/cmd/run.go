@@ -59,22 +59,22 @@ func NewRunCmd() *cobra.Command {
 			)
 
 			// initialize all collectors in the path
-			cs, err := collector.NewFromGlob(
+			is, err := collector.NewFromGlob(
 				configsGlob,
-				collector.WithLogger(logger),
+				collector.RootWithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
 			}
 
 			logger.Info(
-				"initialized collectors",
-				zap.Int("num_collectors", len(cs)),
+				"initialized invokers",
+				zap.Int("num_invokers", len(is)),
 			)
 
 			// invocation all collectors at their desired intervals
 			s, err := service.NewService(
-				cs,
+				is,
 				service.WithLogger(logger),
 			)
 			if err != nil {

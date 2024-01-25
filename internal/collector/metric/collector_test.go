@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/turbolytics/collector/internal/collector/metric/sources"
-	"github.com/turbolytics/collector/internal/collector/sink"
 	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/metrics"
@@ -40,25 +39,6 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 			"key2": "val2",
 		},
 	}}, ms)
-}
-
-func TestCollector_Close(t *testing.T) {
-	ts := &TestSink{}
-	coll := &Collector{
-		Config: &Config{
-			Sinks: map[string]sink.Config{
-				"sink1": {
-					Sinker: ts,
-				},
-				"sink2": {
-					Sinker: ts,
-				},
-			},
-		},
-	}
-	err := coll.Close()
-	assert.NoError(t, err)
-	assert.Equal(t, 2, ts.Closes)
 }
 
 func TestCollector_Source_ValidMetrics(t *testing.T) {

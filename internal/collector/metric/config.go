@@ -12,6 +12,7 @@ import (
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/collector/template"
 	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/collector/internal/sinks"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -42,6 +43,22 @@ type Config struct {
 	logger *zap.Logger
 	// validate will skip initializing network dependencies
 	validate bool
+}
+
+func (c Config) GetSchedule() schedule.Schedule {
+	return c.Schedule
+}
+
+func (c Config) GetSinks() []sinks.Sinker {
+	var ss []sinks.Sinker
+	for _, s := range c.Sinks {
+		ss = append(ss, s.Sinker)
+	}
+	return ss
+}
+
+func (c Config) CollectorName() string {
+	return c.Name
 }
 
 type ConfigOption func(*Config)

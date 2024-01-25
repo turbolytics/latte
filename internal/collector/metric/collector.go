@@ -17,28 +17,13 @@ import (
 	"time"
 )
 
-var meter = otel.Meter("signals-collector")
+var meter = otel.Meter("latte-collector")
 
 type Collector struct {
 	Config *Config
 
 	logger *zap.Logger
 	now    func() time.Time
-}
-
-func (c *Collector) Close() error {
-	for _, s := range c.Config.Sinks {
-		s.Sinker.Close()
-	}
-	return nil
-}
-
-func (c *Collector) Interval() *time.Duration {
-	return c.Config.Schedule.Interval
-}
-
-func (c *Collector) Cron() *string {
-	return c.Config.Schedule.Cron
 }
 
 func (c *Collector) Transform(ms []*metrics.Metric) error {
@@ -130,14 +115,6 @@ func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 		}
 	}
 	return nil
-}
-
-// InvokeHandleError will log any Invoke errors and not return them.
-// Useful for async scheduling.
-func (c *Collector) InvokeHandleError(ctx context.Context) {
-	if err := c.Invoke(ctx); err != nil {
-		c.logger.Error(err.Error())
-	}
 }
 
 func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
