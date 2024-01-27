@@ -1,3 +1,7 @@
 package partition
 
-type Partition string
+import "net/url"
+
+type Partition interface {
+	URI() *url.URL
+}

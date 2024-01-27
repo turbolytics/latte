@@ -1,4 +1,4 @@
-name: clickhouse_s3_loader_1m
+name: clickhouse_s3_partition_loader_1m
 
 collector:
   type: partition
@@ -13,15 +13,17 @@ source:
   type: partition.s3
   strategy: historic_tumbling_window
   config:
+    time:
+      window: 1m
     validate_exists: false
     bucket: latte-test-bucket
     region: us-east-2
     prefix: data-source
-    partition: /year={{.Year}}/month={{.Month}}/day={{.Day}}
+    partition: year={{.Year}}/month={{.Month}}/day={{.Day}}/hour={{.Hour}}/min={{.Minute}}
 
 sinks:
   http:
     uri: ???
     method: POST
-    query: ???
+    body: ???
 

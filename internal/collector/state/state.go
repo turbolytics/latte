@@ -20,6 +20,13 @@ type Invocation struct {
 	Window        *timeseries.Window
 }
 
+func (i Invocation) End() *time.Time {
+	if i.Window != nil {
+		return &i.Window.End
+	}
+	return nil
+}
+
 type Storer interface {
 	io.Closer
 

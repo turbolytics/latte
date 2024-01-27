@@ -33,6 +33,7 @@ type MetricSourcer interface {
 
 type PartitionSourcer interface {
 	Source(ctx context.Context) (*partition.Partition, error)
+	Window() *time.Duration
 }
 
 type Config struct {
@@ -42,6 +43,15 @@ type Config struct {
 
 	MetricSourcer    MetricSourcer
 	PartitionSourcer PartitionSourcer
+}
+
+func (c Config) Window() *time.Duration {
+	if c.MetricSourcer != nil {
+		return c.MetricSourcer.Window()
+	} else if c.PartitionSourcer != nil {
+		return c.PartitionSourcer.Window()
+	}
+	return nil
 }
 
 func (c Config) Validate() error {

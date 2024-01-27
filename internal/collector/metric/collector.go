@@ -152,7 +152,7 @@ func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID,
 		zap.String("window.start", window.Start.String()),
 		zap.String("window.end", window.End.String()),
 		zap.String("id", id.String()),
-		zap.String("name", c.Config.Name),
+		zap.String("name", c.Config.CollectorName()),
 	)
 
 	// it is passed the window, collect data for the window
@@ -188,8 +188,8 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	}
 
 	var lastWindowEnd *time.Time
-	if i != nil && i.Window != nil {
-		lastWindowEnd = &i.Window.End
+	if i != nil {
+		lastWindowEnd = i.End()
 	}
 
 	hw := timeseries.NewHistoricTumblingWindower(
@@ -234,43 +234,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 }
 
 func (c *Collector) Invoke(ctx context.Context) (err error) {
-	start := time.Now().UTC()
-
-	histogram, _ := meter.Float64Histogram(
-		"collector.invoke.duration",
-		metric.WithUnit("s"),
-	)
-
-	counter, _ := meter.Int64Counter(
-		"collector.invoke.count",
-	)
-
-	defer func() {
-		duration := time.Since(start)
-
-		counter.Add(ctx, 1, metric.WithAttributeSet(
-			attribute.NewSet(
-				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("collector.name", c.Config.Name),
-			),
-		))
-
-		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
-			attribute.NewSet(
-				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("collector.name", c.Config.Name),
-			),
-		))
-	}()
-
-	id := uuid.New()
-	c.logger.Info(
-		"collector.Invoke",
-		zap.String("id", id.String()),
-		zap.String("name", c.Config.Name),
-	)
-	ctx = context.WithValue(ctx, "id", id)
-
+	id := ctx.Value("id").(uuid.UUID)
 	// Collector supports multiple sourcing strategies.
 	// The simplest is "tick" strategy which just invokes
 	// the sourcer without any additional state necessary

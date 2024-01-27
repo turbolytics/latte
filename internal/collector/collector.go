@@ -161,7 +161,7 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 		)
 		collConfig = mc
 	case TypePartition:
-		_, err := partition.NewConfig(
+		pc, err := partition.NewConfig(
 			bs,
 			partition.ConfigWithJustValidation(conf.validate),
 			partition.ConfigWithLogger(conf.logger),
@@ -169,6 +169,11 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 		if err != nil {
 			return nil, err
 		}
+		coll, err = partition.NewCollector(
+			pc,
+			partition.CollectorWithLogger(conf.logger),
+		)
+		collConfig = pc
 
 	default:
 		return nil, fmt.Errorf("collector type: %v not supported", conf.Collector.Type)
