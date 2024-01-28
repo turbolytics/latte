@@ -6,6 +6,7 @@ import (
 	"github.com/turbolytics/collector/internal/sinks/file"
 	"github.com/turbolytics/collector/internal/sinks/http"
 	"github.com/turbolytics/collector/internal/sinks/kafka"
+	"go.uber.org/zap"
 )
 
 type Config struct {
@@ -14,7 +15,7 @@ type Config struct {
 	Config map[string]any
 }
 
-func (c *Config) Init(validate bool) error {
+func (c *Config) Init(validate bool, logger *zap.Logger) error {
 	var sink sinks.Sinker
 	var err error
 
@@ -24,7 +25,10 @@ func (c *Config) Init(validate bool) error {
 	case sinks.TypeKafka:
 		sink, err = kafka.NewFromGenericConfig(c.Config)
 	case sinks.TypeHTTP:
-		sink, err = http.NewFromGenericConfig(c.Config)
+		sink, err = http.NewFromGenericConfig(
+			c.Config,
+			http.WithLogger(logger),
+		)
 	case sinks.TypeFile:
 		sink, err = file.NewFromGenericConfig(
 			c.Config,

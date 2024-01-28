@@ -81,7 +81,7 @@ func validate(c Config) error {
 
 func initSinks(c *Config) error {
 	for k, v := range c.Sinks {
-		if err := v.Init(c.validate); err != nil {
+		if err := v.Init(c.validate, c.logger); err != nil {
 			return err
 		}
 		c.Sinks[k] = v

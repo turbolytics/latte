@@ -15,7 +15,9 @@ func NewInvokeCmd() *cobra.Command {
 		Short: "Invoke a signal collection",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			logger, _ := zap.NewProduction()
+			lConfig := zap.NewProductionConfig()
+			lConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+			logger := zap.Must(lConfig.Build())
 			defer logger.Sync() // flushes buffer, if any
 
 			ctx := context.Background()
