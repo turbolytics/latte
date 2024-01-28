@@ -1,0 +1,39 @@
+name: clickhouse_s3_partition_loader_1m
+
+collector:
+  type: partition
+
+schedule:
+  interval: 30s
+
+state_store:
+  type: memory
+
+source:
+  type: partition.s3
+  strategy: historic_tumbling_window
+  config:
+    time:
+      window: 1m
+    validate_exists: false
+    bucket: latte-test-bucket
+    region: us-east-2
+    prefix: data-source
+    partition: year={{.Year}}/month={{.Month}}/day={{.Day}}/hour={{.Hour}}/min={{.Minute}}
+
+transform:
+  name: clickhouse_insert
+  type: template
+  config:
+    template: |
+      INSERT INTO test SELECT * FROM s3('{{ .URI }}')
+
+sinks:
+  clickhouse:
+    type: http
+    config:
+      uri: 'https://httpbin.org/post'
+      headers:
+        accept: "application/json"
+        content-type: "application/x-www-form-urlencoded"
+      method: POST

@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/collector/metric/config"
 	"github.com/turbolytics/collector/internal/collector/metric/sources"
+	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
-	"github.com/turbolytics/collector/internal/collector/state/memory"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/timeseries"
 	"go.uber.org/zap"
@@ -17,9 +16,9 @@ import (
 )
 
 func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
-	coll, err := New(&config.Config{
-		Metric: config.Metric{
-			Tags: []config.Tag{
+	coll, err := NewCollector(&Config{
+		Metric: Metric{
+			Tags: []Tag{
 				{"key1", "val1"},
 				{"key2", "val2"},
 			},
@@ -42,25 +41,6 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 	}}, ms)
 }
 
-func TestCollector_Close(t *testing.T) {
-	ts := &TestSink{}
-	coll := &Collector{
-		Config: &config.Config{
-			Sinks: map[string]config.Sink{
-				"sink1": {
-					Sinker: ts,
-				},
-				"sink2": {
-					Sinker: ts,
-				},
-			},
-		},
-	}
-	err := coll.Close()
-	assert.NoError(t, err)
-	assert.Equal(t, 2, ts.Closes)
-}
-
 func TestCollector_Source_ValidMetrics(t *testing.T) {
 	expectedMetrics := []*metrics.Metric{
 		{
@@ -73,10 +53,10 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 	}
 
 	coll := &Collector{
-		Config: &config.Config{
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyTick,
+		Config: &Config{
+			Source: source.Config{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyTick,
 			},
 		},
 	}
@@ -98,21 +78,21 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		Ms:             expectedMetrics,
 		WindowDuration: time.Minute,
 	}
-	ss, _ := memory.NewFromGenericConfig(map[string]any{})
+	ss, _ := state.NewMemoryStoreFromGenericConfig(map[string]any{})
 
 	coll := &Collector{
 		logger: zap.NewNop(),
 		now: func() time.Time {
 			return now
 		},
-		Config: &config.Config{
+		Config: &Config{
 			Name: "test_collector",
-			StateStore: config.StateStore{
+			StateStore: state.Config{
 				Storer: ss,
 			},
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyWindow,
+			Source: source.Config{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
 		},
 	}
@@ -157,7 +137,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 	ts := &sources.TestSourcer{
 		WindowDuration: time.Hour,
 	}
-	ss, _ := memory.NewFromGenericConfig(map[string]any{})
+	ss, _ := state.NewMemoryStoreFromGenericConfig(map[string]any{})
 	ss.SaveInvocation(&state.Invocation{
 		CollectorName: "test_collector",
 		Window: &timeseries.Window{
@@ -171,14 +151,14 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		now: func() time.Time {
 			return now
 		},
-		Config: &config.Config{
+		Config: &Config{
 			Name: "test_collector",
-			StateStore: config.StateStore{
+			StateStore: state.Config{
 				Storer: ss,
 			},
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyWindow,
+			Source: source.Config{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
 		},
 	}
@@ -204,7 +184,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		Ms:             expectedMetrics,
 		WindowDuration: time.Hour,
 	}
-	ss, _ := memory.NewFromGenericConfig(map[string]any{})
+	ss, _ := state.NewMemoryStoreFromGenericConfig(map[string]any{})
 	err := ss.SaveInvocation(&state.Invocation{
 		CollectorName: "test_collector",
 		Window: &timeseries.Window{
@@ -219,14 +199,14 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		now: func() time.Time {
 			return now
 		},
-		Config: &config.Config{
+		Config: &Config{
 			Name: "test_collector",
-			StateStore: config.StateStore{
+			StateStore: state.Config{
 				Storer: ss,
 			},
-			Source: config.Source{
-				Sourcer:  ts,
-				Strategy: config.TypeSourceStrategyWindow,
+			Source: source.Config{
+				MetricSourcer: ts,
+				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
 		},
 	}

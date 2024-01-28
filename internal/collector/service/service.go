@@ -8,17 +8,17 @@ import (
 )
 
 type Service struct {
-	logger     *zap.Logger
-	collectors []collector.Collector
-	scheduler  gocron.Scheduler
+	logger    *zap.Logger
+	invokers  []*collector.Invoker
+	scheduler gocron.Scheduler
 }
 
 func (s *Service) Shutdown() {
 	s.logger.Info("shutdown")
 	defer s.scheduler.Shutdown()
 	// close each collector
-	for _, coll := range s.collectors {
-		coll.Close()
+	for _, i := range s.invokers {
+		i.Close()
 	}
 
 }
@@ -26,21 +26,22 @@ func (s *Service) Shutdown() {
 func (s *Service) Run(ctx context.Context) error {
 	s.logger.Info("run")
 	// iterate all collectors and invoke for the initial invocation
-	for _, col := range s.collectors {
-		go col.InvokeHandleError(ctx)
+	for _, i := range s.invokers {
+		go i.InvokeHandleError(ctx)
 	}
 
-	for _, col := range s.collectors {
-		colCopy := col
+	for _, i := range s.invokers {
+		iCopy := i
+		sch := i.Config.GetSchedule()
 
 		var jd gocron.JobDefinition
-		if colCopy.Interval() != nil {
+		if sch.Interval != nil {
 			jd = gocron.DurationJob(
-				*(colCopy.Interval()),
+				*(sch.Interval),
 			)
-		} else if colCopy.Cron() != nil {
+		} else if sch.Cron != nil {
 			jd = gocron.CronJob(
-				*(colCopy.Cron()),
+				*(sch.Cron),
 				false,
 			)
 		}
@@ -49,10 +50,11 @@ func (s *Service) Run(ctx context.Context) error {
 			jd,
 			gocron.NewTask(
 				func(ctx context.Context) {
-					colCopy.InvokeHandleError(ctx)
+					iCopy.InvokeHandleError(ctx)
 				},
 				ctx,
 			),
+			gocron.WithSingletonMode(gocron.LimitModeReschedule),
 		)
 		if err != nil {
 			return err
@@ -73,15 +75,15 @@ func WithLogger(l *zap.Logger) Option {
 	}
 }
 
-func NewService(cs []collector.Collector, opts ...Option) (*Service, error) {
+func NewService(is []*collector.Invoker, opts ...Option) (*Service, error) {
 	sch, err := gocron.NewScheduler()
 	if err != nil {
 		return nil, err
 	}
 
 	s := &Service{
-		collectors: cs,
-		scheduler:  sch,
+		invokers:  is,
+		scheduler: sch,
 	}
 
 	for _, opt := range opts {

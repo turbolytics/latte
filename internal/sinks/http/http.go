@@ -8,7 +8,10 @@ import (
 )
 
 type config struct {
-	URI string
+	URI     string
+	Method  string
+	Body    string
+	Headers map[string]string
 }
 
 type HTTP struct {
@@ -21,7 +24,21 @@ func (h *HTTP) Close() error {
 
 func (h *HTTP) Write(bs []byte) (int, error) {
 	buf := bytes.NewBuffer(bs)
-	resp, err := http.Post(h.config.URI, "application/x-www-form-urlencoded", buf)
+
+	req, err := http.NewRequest(
+		h.config.Method,
+		h.config.URI,
+		buf,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	for k, v := range h.config.Headers {
+		req.Header.Add(k, v)
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -30,6 +47,7 @@ func (h *HTTP) Write(bs []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return len(bs), nil
 }
 

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/turbolytics/collector/internal/collector/metric/config"
+	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
 	"github.com/turbolytics/collector/internal/metrics"
 	"github.com/turbolytics/collector/internal/obs"
@@ -17,28 +17,13 @@ import (
 	"time"
 )
 
-var meter = otel.Meter("signals-collector")
+var meter = otel.Meter("latte-collector")
 
 type Collector struct {
-	Config *config.Config
+	Config *Config
 
 	logger *zap.Logger
 	now    func() time.Time
-}
-
-func (c *Collector) Close() error {
-	for _, s := range c.Config.Sinks {
-		s.Sinker.Close()
-	}
-	return nil
-}
-
-func (c *Collector) Interval() *time.Duration {
-	return c.Config.Schedule.Interval
-}
-
-func (c *Collector) Cron() *string {
-	return c.Config.Schedule.Cron
 }
 
 func (c *Collector) Transform(ms []*metrics.Metric) error {
@@ -88,7 +73,7 @@ func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error
 
 	}()
 
-	ms, err = c.Config.Source.Sourcer.Source(ctx)
+	ms, err = c.Config.Source.MetricSourcer.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -132,14 +117,6 @@ func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 	return nil
 }
 
-// InvokeHandleError will log any Invoke errors and not return them.
-// Useful for async scheduling.
-func (c *Collector) InvokeHandleError(ctx context.Context) {
-	if err := c.Invoke(ctx); err != nil {
-		c.logger.Error(err.Error())
-	}
-}
-
 func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
 	ms, err := c.Source(ctx)
 	if err != nil {
@@ -175,7 +152,7 @@ func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID,
 		zap.String("window.start", window.Start.String()),
 		zap.String("window.end", window.End.String()),
 		zap.String("id", id.String()),
-		zap.String("name", c.Config.Name),
+		zap.String("name", c.Config.CollectorName()),
 	)
 
 	// it is passed the window, collect data for the window
@@ -211,8 +188,8 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	}
 
 	var lastWindowEnd *time.Time
-	if i != nil && i.Window != nil {
-		lastWindowEnd = &i.Window.End
+	if i != nil {
+		lastWindowEnd = i.End()
 	}
 
 	hw := timeseries.NewHistoricTumblingWindower(
@@ -220,7 +197,7 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 	)
 	windows, err := hw.FullWindowsSince(
 		lastWindowEnd,
-		*(c.Config.Source.Sourcer.Window()),
+		*(c.Config.Source.MetricSourcer.Window()),
 	)
 	if err != nil {
 		return nil, err
@@ -257,52 +234,16 @@ func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.
 }
 
 func (c *Collector) Invoke(ctx context.Context) (err error) {
-	start := time.Now().UTC()
-
-	histogram, _ := meter.Float64Histogram(
-		"collector.invoke.duration",
-		metric.WithUnit("s"),
-	)
-
-	counter, _ := meter.Int64Counter(
-		"collector.invoke.count",
-	)
-
-	defer func() {
-		duration := time.Since(start)
-
-		counter.Add(ctx, 1, metric.WithAttributeSet(
-			attribute.NewSet(
-				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("collector.name", c.Config.Name),
-			),
-		))
-
-		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
-			attribute.NewSet(
-				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("collector.name", c.Config.Name),
-			),
-		))
-	}()
-
-	id := uuid.New()
-	c.logger.Info(
-		"collector.Invoke",
-		zap.String("id", id.String()),
-		zap.String("name", c.Config.Name),
-	)
-	ctx = context.WithValue(ctx, "id", id)
-
+	id := ctx.Value("id").(uuid.UUID)
 	// Collector supports multiple sourcing strategies.
 	// The simplest is "tick" strategy which just invokes
 	// the sourcer without any additional state necessary
 	// The windowing strategy may result in multiple source
 	// invocations for each window that needs to be executed.
 	switch c.Config.Source.Strategy {
-	case config.TypeSourceStrategyTick:
+	case source.TypeStrategyTick:
 		_, err = c.invokeTick(ctx, id)
-	case config.TypeSourceStrategyWindow:
+	case source.TypeStrategyHistoricTumblingWindow:
 		_, err = c.invokeWindow(ctx, id)
 	default:
 		return fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
@@ -311,15 +252,15 @@ func (c *Collector) Invoke(ctx context.Context) (err error) {
 	return err
 }
 
-type Option func(*Collector)
+type CollectorOption func(*Collector)
 
-func WithLogger(l *zap.Logger) Option {
+func CollectorWithLogger(l *zap.Logger) CollectorOption {
 	return func(c *Collector) {
 		c.logger = l
 	}
 }
 
-func New(config *config.Config, opts ...Option) (*Collector, error) {
+func NewCollector(config *Config, opts ...CollectorOption) (*Collector, error) {
 	c := &Collector{
 		Config: config,
 		now: func() time.Time {

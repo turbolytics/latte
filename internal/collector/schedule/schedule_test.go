@@ -1,4 +1,4 @@
-package config
+package schedule
 
 import (
 	"fmt"
@@ -6,12 +6,6 @@ import (
 	"testing"
 	"time"
 )
-
-func TestInvocation_SetDefaults_Schedule(t *testing.T) {
-	conf := &Config{}
-	defaults(conf)
-	assert.Equal(t, TypeSourceStrategyTick, conf.Source.Strategy)
-}
 
 func TestSchedule_Validate(t *testing.T) {
 	h := time.Hour
