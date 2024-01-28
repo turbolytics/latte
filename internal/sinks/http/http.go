@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"github.com/mitchellh/mapstructure"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
@@ -14,8 +15,18 @@ type config struct {
 	Headers map[string]string
 }
 
+type Option func(*HTTP)
+
+func WithLogger(l *zap.Logger) Option {
+	return func(h *HTTP) {
+		h.logger = l
+	}
+}
+
 type HTTP struct {
 	config config
+
+	logger *zap.Logger
 }
 
 func (h *HTTP) Close() error {
@@ -43,21 +54,32 @@ func (h *HTTP) Write(bs []byte) (int, error) {
 		return 0, err
 	}
 	defer resp.Body.Close()
-	_, err = io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, err
 	}
 
+	h.logger.Debug(
+		"http.response",
+		zap.String("name", "http.sink"),
+		zap.ByteString("resp", body),
+	)
+
 	return len(bs), nil
 }
 
-func NewFromGenericConfig(m map[string]any) (*HTTP, error) {
+func NewFromGenericConfig(m map[string]any, opts ...Option) (*HTTP, error) {
 	var conf config
 	if err := mapstructure.Decode(m, &conf); err != nil {
 		return nil, err
 	}
 
-	return &HTTP{
+	h := &HTTP{
 		config: conf,
-	}, nil
+	}
+	for _, opt := range opts {
+		opt(h)
+	}
+
+	return h, nil
 }
