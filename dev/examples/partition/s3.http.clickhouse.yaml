@@ -21,6 +21,13 @@ source:
     prefix: data-source
     partition: year={{.Year}}/month={{.Month}}/day={{.Day}}/hour={{.Hour}}/min={{.Minute}}
 
+transform:
+  name: clickhouse_insert
+  type: template
+  config:
+    template: |
+      INSERT INTO test SELECT * FROM s3('{{ .URI }}')
+
 sinks:
   clickhouse:
     type: http
@@ -28,8 +35,5 @@ sinks:
       uri: 'https://httpbin.org/post'
       headers:
         accept: "application/json"
+        content-type: "application/x-www-form-urlencoded"
       method: POST
-      body: |
-        INSERT INTO test
-        SELECT * FROM s3('{{ .URI }}')
-

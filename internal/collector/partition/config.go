@@ -5,6 +5,7 @@ import (
 	"github.com/turbolytics/collector/internal/collector/sink"
 	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
+	"github.com/turbolytics/collector/internal/collector/transform"
 	"github.com/turbolytics/collector/internal/sinks"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -15,6 +16,7 @@ type Config struct {
 	Schedule   schedule.Schedule
 	StateStore state.Config `yaml:"state_store"`
 	Source     source.Config
+	Transform  transform.Config
 	Sinks      map[string]sink.Config
 
 	logger *zap.Logger
@@ -124,6 +126,10 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 	}
 
 	if err := conf.Source.Init(); err != nil {
+		return nil, err
+	}
+
+	if err := conf.Transform.Init(); err != nil {
 		return nil, err
 	}
 

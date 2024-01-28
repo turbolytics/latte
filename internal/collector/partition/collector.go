@@ -2,7 +2,6 @@ package partition
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/turbolytics/collector/internal/collector/source"
@@ -79,15 +78,15 @@ func (c *Collector) Sink(ctx context.Context, p *partition.Partition) error {
 		metric.WithUnit("s"),
 	)
 
-	// need to add a serializer
-	bs, err := json.Marshal(p)
+	out, err := c.config.Transform.Transformer.Transform(p)
 	if err != nil {
 		return err
 	}
+
 	for _, s := range c.config.Sinks {
 		start := time.Now().UTC()
 
-		_, err := s.Sinker.Write(bs)
+		_, err := s.Sinker.Write(out)
 
 		duration := time.Since(start)
 		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
