@@ -8,7 +8,9 @@ import (
 )
 
 type config struct {
-	URI string
+	URI    string
+	Method string
+	Body   string
 }
 
 type HTTP struct {

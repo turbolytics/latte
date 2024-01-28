@@ -22,8 +22,14 @@ source:
     partition: year={{.Year}}/month={{.Month}}/day={{.Day}}/hour={{.Hour}}/min={{.Minute}}
 
 sinks:
-  http:
-    uri: ???
-    method: POST
-    body: ???
+  clickhouse:
+    type: http
+    config:
+      uri: 'https://httpbin.org/post'
+      headers:
+        accept: "application/json"
+      method: POST
+      body: |
+        INSERT INTO test
+        SELECT * FROM s3('{{ .URI }}')
 

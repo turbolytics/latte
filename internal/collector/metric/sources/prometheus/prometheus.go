@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	scsql "github.com/turbolytics/collector/internal/collector/metric/sources/sql"
 	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/collector/internal/timeseries"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -19,28 +20,11 @@ import (
 	"time"
 )
 
-type timeWindowConfig struct {
-	Window string `mapstructure:"window"`
-
-	// mapstructure does not parse to native go types
-	// maybe there is a way to implement an unmarshaller
-	window time.Duration
-}
-
-func (tw *timeWindowConfig) init() error {
-	d, err := time.ParseDuration(tw.Window)
-	if err != nil {
-		return err
-	}
-	tw.window = d
-	return nil
-}
-
 type config struct {
 	SQL   string
 	Query string
 	URI   string
-	Time  *timeWindowConfig
+	Time  *timeseries.WindowConfig
 
 	url *url.URL
 }
@@ -170,7 +154,7 @@ CREATE TABLE prom_metrics (
 }
 
 func (p *Prometheus) Window() *time.Duration {
-	return &p.config.Time.window
+	return p.config.Time.Duration()
 }
 
 func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
@@ -217,7 +201,7 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error)
 	conf.url = u
 
 	if conf.Time != nil {
-		if err := conf.Time.init(); err != nil {
+		if err := conf.Time.Init(); err != nil {
 			return nil, err
 		}
 	}

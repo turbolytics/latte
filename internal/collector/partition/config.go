@@ -5,7 +5,6 @@ import (
 	"github.com/turbolytics/collector/internal/collector/sink"
 	"github.com/turbolytics/collector/internal/collector/source"
 	"github.com/turbolytics/collector/internal/collector/state"
-	"github.com/turbolytics/collector/internal/collector/template"
 	"github.com/turbolytics/collector/internal/sinks"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -97,12 +96,18 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		opt(&conf)
 	}
 
-	bs, err := template.Parse(raw)
-	if err != nil {
-		return nil, err
-	}
+	// TODO figure out how to maintain this as a template but still allow templatizing the rest of the config
+	// We could go through and only parse the allowed fields.
+	// Will end users need to provide templated values for the partition?
+	// Not sure if we can escape it.
+	/*
+		bs, err := template.Parse(raw)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
-	if err := yaml.Unmarshal(bs, &conf); err != nil {
+	if err := yaml.Unmarshal(raw, &conf); err != nil {
 		return nil, err
 	}
 

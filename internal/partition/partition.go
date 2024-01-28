@@ -2,6 +2,6 @@ package partition
 
 import "net/url"
 
-type Partition interface {
-	URI() *url.URL
+type Partition struct {
+	URI *url.URL
 }
