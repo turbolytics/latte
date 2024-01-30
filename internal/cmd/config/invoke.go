@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/collector/internal/collector"
+	"github.com/turbolytics/latte/internal/collector"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,7 @@ func NewInvokeCmd() *cobra.Command {
 
 			c, err := collector.NewFromFile(
 				configPath,
-				collector.WithJustValidation(true),
+				collector.WithJustValidation(false),
 				collector.RootWithLogger(logger),
 			)
 			if err != nil {

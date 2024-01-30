@@ -2,7 +2,7 @@ package sources
 
 import (
 	"context"
-	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/latte/internal/metrics"
 	"time"
 )
 

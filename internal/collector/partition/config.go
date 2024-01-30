@@ -1,12 +1,12 @@
 package partition
 
 import (
-	"github.com/turbolytics/collector/internal/collector/schedule"
-	"github.com/turbolytics/collector/internal/collector/sink"
-	"github.com/turbolytics/collector/internal/collector/source"
-	"github.com/turbolytics/collector/internal/collector/state"
-	"github.com/turbolytics/collector/internal/collector/transform"
-	"github.com/turbolytics/collector/internal/sinks"
+	"github.com/turbolytics/latte/internal/collector/schedule"
+	"github.com/turbolytics/latte/internal/collector/sink"
+	"github.com/turbolytics/latte/internal/collector/source"
+	"github.com/turbolytics/latte/internal/collector/state"
+	"github.com/turbolytics/latte/internal/collector/transform"
+	"github.com/turbolytics/latte/internal/sinks"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )

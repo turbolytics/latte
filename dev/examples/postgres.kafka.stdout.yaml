@@ -27,12 +27,12 @@ sinks:
   audit:
     type: file
     config:
-      path: /tmp/log/signals.audit.log
+      path: /tmp/log/latte.audit.log
 
   kafka:
     type: kafka
     config:
       brokers:
         - '{{ getEnvOrDefault "SC_KAFKA_HOST" "localhost:9092" }}'
-      topic: signals
+      topic: latte
       allow_auto_topic_creation: true

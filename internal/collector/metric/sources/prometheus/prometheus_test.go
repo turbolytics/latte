@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/latte/internal/metrics"
 	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
@@ -25,8 +25,8 @@ func TestPrometheus_Source_Success(t *testing.T) {
         "metric": {
           "collector_name": "mongo.users.10s",
           "instance": "host.docker.internal:12223",
-          "job": "signals-collector",
-          "otel_scope_name": "signals-collector",
+          "job": "latte",
+          "otel_scope_name": "latte",
           "result_status_code": "OK"
         },
         "value": [
@@ -38,8 +38,8 @@ func TestPrometheus_Source_Success(t *testing.T) {
         "metric": {
           "collector_name": "postgres.users.total.1m",
           "instance": "host.docker.internal:12223",
-          "job": "signals-collector",
-          "otel_scope_name": "signals-collector",
+          "job": "latte",
+          "otel_scope_name": "latte",
           "result_status_code": "OK"
         },
         "value": [
@@ -51,8 +51,8 @@ func TestPrometheus_Source_Success(t *testing.T) {
         "metric": {
           "collector_name": "postgres.users.total.24h",
           "instance": "host.docker.internal:12223",
-          "job": "signals-collector",
-          "otel_scope_name": "signals-collector",
+          "job": "latte",
+          "otel_scope_name": "latte",
           "result_status_code": "ERROR"
         },
         "value": [
@@ -64,8 +64,8 @@ func TestPrometheus_Source_Success(t *testing.T) {
         "metric": {
           "collector_name": "postgres.users.total.24h",
           "instance": "host.docker.internal:12223",
-          "job": "signals-collector",
-          "otel_scope_name": "signals-collector",
+          "job": "latte",
+          "otel_scope_name": "latte",
           "result_status_code": "OK"
         },
         "value": [
@@ -77,8 +77,8 @@ func TestPrometheus_Source_Success(t *testing.T) {
         "metric": {
           "collector_name": "postgres.users.total.30s",
           "instance": "host.docker.internal:12223",
-          "job": "signals-collector",
-          "otel_scope_name": "signals-collector",
+          "job": "latte",
+          "otel_scope_name": "latte",
           "result_status_code": "ERROR"
         },
         "value": [
@@ -90,8 +90,8 @@ func TestPrometheus_Source_Success(t *testing.T) {
         "metric": {
           "collector_name": "postgres.users.total.30s",
           "instance": "host.docker.internal:12223",
-          "job": "signals-collector",
-          "otel_scope_name": "signals-collector",
+          "job": "latte",
+          "otel_scope_name": "latte",
           "result_status_code": "OK"
         },
         "value": [

@@ -3,7 +3,7 @@ package mongodb
 import (
 	"context"
 	"github.com/mitchellh/mapstructure"
-	"github.com/turbolytics/collector/internal/metrics"
+	"github.com/turbolytics/latte/internal/metrics"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

@@ -3,9 +3,9 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/collector/internal/collector"
-	"github.com/turbolytics/collector/internal/collector/service"
-	"github.com/turbolytics/collector/internal/obs"
+	"github.com/turbolytics/latte/internal/collector"
+	"github.com/turbolytics/latte/internal/collector/service"
+	"github.com/turbolytics/latte/internal/obs"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"

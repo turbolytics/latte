@@ -2,8 +2,8 @@ package collector
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/collector/metric"
-	"github.com/turbolytics/collector/internal/collector/sink"
+	"github.com/turbolytics/latte/internal/collector/metric"
+	"github.com/turbolytics/latte/internal/collector/sink"
 	"testing"
 )
 

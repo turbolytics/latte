@@ -1,11 +1,11 @@
 package sink
 
 import (
-	"github.com/turbolytics/collector/internal/sinks"
-	"github.com/turbolytics/collector/internal/sinks/console"
-	"github.com/turbolytics/collector/internal/sinks/file"
-	"github.com/turbolytics/collector/internal/sinks/http"
-	"github.com/turbolytics/collector/internal/sinks/kafka"
+	"github.com/turbolytics/latte/internal/sinks"
+	"github.com/turbolytics/latte/internal/sinks/console"
+	"github.com/turbolytics/latte/internal/sinks/file"
+	"github.com/turbolytics/latte/internal/sinks/http"
+	"github.com/turbolytics/latte/internal/sinks/kafka"
 	"go.uber.org/zap"
 )
 

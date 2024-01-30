@@ -2,11 +2,11 @@
 
 Prometheus is a timeseries data store for operational telemetry. Prometheus is used to determine health of operational systems, debug issues and alert on issues when they do occur. Many companies have the need to report on operational telemetry in the form of Service Level Objectives (SLOs). SLOs determine service availability. 
 
-This tutorial shows how signals collector is used to capture prometheus SLO data for long term storage in a datalake or datawarehouse.
+This tutorial shows how latte is used to capture prometheus SLO data for long term storage in a datalake or datawarehouse.
 
 <img width="713" alt="Screenshot 2024-01-07 at 1 01 52 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/c8d9f6fe-8a31-42c9-85a1-00001f2fb3c4">
 
-The signals collector will:
+The latte will:
 
 1. Scrape prometheus API daily for yesterday's data 
 2. Transform the prometheus API response using duckdb sql 
@@ -59,9 +59,9 @@ curl 'http://localhost:9090/api/v1/query?query=sum%28round%28increase%28collecto
 }
 ```
 
-### Configure Signals Collector to Query Prometheus API
+### Configure latte to Query Prometheus API
 
-Signals collector needs to know where to reach prometheus and the query to execute against prometheus:
+latte needs to know where to reach prometheus and the query to execute against prometheus:
 
 ```yaml
   type: prometheus
@@ -77,9 +77,9 @@ The `type` value specifies that this is a `prometheus` collection. The strategy 
 
 Notice the `time.window`. This is a special variable that tells prometheus how much data it is working with. The collector needs this information to correctly schedule data collections against prometheus. The `time.window` property is used to avoid parsing this information out of the prometheus `query` value.
 
-This will ensure idempotent data collection runs. Every time signals collector runs it will start collection from the beginning of the day. This will ensure that the date is consistent, and that the date being used is already passed, meaning that the full 24 hours of availability data is present.
+This will ensure idempotent data collection runs. Every time latte runs it will start collection from the beginning of the day. This will ensure that the date is consistent, and that the date being used is already passed, meaning that the full 24 hours of availability data is present.
 
-### Configure Signals Collector Transform 
+### Configure latte Transform 
 
 The next step is to specify the transform that will be applied to the prometheus API output:
 
@@ -90,7 +90,7 @@ source:
     ...
     sql: |
       SELECT
-          'signals-collector' as service,
+          'latte' as service,
           CASE
               WHEN metric->>'result_status_code' = 'OK'
               THEN false
@@ -112,14 +112,14 @@ This sql is executed using duckdb against the API response returned from the pro
   "tags": {
     "env": "prod",
     "error": "false",
-    "service": "signals-collector"
+    "service": "latte"
   },
   "timestamp": "2024-01-15T19:11:31.637377Z",
   "window": "2024-01-15T00:00:00Z"
 }
 ```
 
-### Validate Signals Collector Config
+### Validate latte Config
 
 The next step is to validate the configuration:
 
@@ -131,7 +131,7 @@ VALID=true
 
 Validation ensures that the configuration file is correct and can be successfully parsed.
 
-### Invoke Signals Collector Config
+### Invoke latte Config
 
 After the collector configuration file is validated it can be invoked using the following command:
 
@@ -141,9 +141,9 @@ go run cmd/main.go config invoke --config=$(PWD)/dev/examples/prometheus.stdout.
 
 Invocation actually executes the configuration file. This is used to verify that data is sourced, transformed and sunk correctly.
 
-### Start Signals collector for Regular Collection
+### Start latte for Regular Collection
 
-Signal collector ships with a daemon that executes collectors at their specified intervals. The following command starts signals collector as a service: 
+Signal collector ships with a daemon that executes collectors at their specified intervals. The following command starts latte as a service: 
 
 ```
 go run cmd/main.go run -c $(PWD)/dev/examples/prometheus.stdout.yaml
@@ -151,23 +151,23 @@ go run cmd/main.go run -c $(PWD)/dev/examples/prometheus.stdout.yaml
 
 The service executes the prometheus collector every 12 hours. The prometheus collector will collect availability data for 24 hours and emit a single data point every time it encounters a fully complete day. More information about this is available under the "window" strategy documentation.
 
-Signals collector also ships as a [docker image](https://github.com/turbolytics/signals-collector/blob/main/Dockerfile) and on [dockerhub](https://hub.docker.com/repository/docker/turbolytics/signals-collector/general).
+latte also ships as a [docker image](https://github.com/turbolytics/latte/blob/main/Dockerfile) and on [dockerhub](https://hub.docker.com/repository/docker/turbolytics/latte/general).
 
 ### Query Output for Reporting
 
 The final step is to query data for reporting. This example collects availability data daily. Error and non-error counts are collected which allow for availability calculation over arbitrary intervals. The prometheus collector used in this example outputs availibility data to a local audit file. The following shows an example of this data:
 
 ```
-D select name, value, tags, "window" from read_json('signals.audit.log', auto_detect=true, format=newline_delimited);
+D select name, value, tags, "window" from read_json('latte.audit.log', auto_detect=true, format=newline_delimited);
 ┌──────────────────────────┬───────┬─────────────────────────────────────────────────────────────┬─────────────────────┐
 │           name           │ value │                            tags                             │       window        │
 │         varchar          │ int64 │     struct(env varchar, error varchar, service varchar)     │      timestamp      │
 ├──────────────────────────┼───────┼─────────────────────────────────────────────────────────────┼─────────────────────┤
-│ service.availability.24h │    41 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-15 00:00:00 │
-│ service.availability.24h │    61 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-14 00:00:00 │
-│ service.availability.24h │     2 │ {'env': prod, 'error': true, 'service': signals-collector}  │ 2024-01-14 00:00:00 │
-│ service.availability.24h │    80 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-13 00:00:00 │
-│ service.availability.24h │    71 │ {'env': prod, 'error': false, 'service': signals-collector} │ 2024-01-12 00:00:00 │
+│ service.availability.24h │    41 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-15 00:00:00 │
+│ service.availability.24h │    61 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-14 00:00:00 │
+│ service.availability.24h │     2 │ {'env': prod, 'error': true, 'service': latte}  │ 2024-01-14 00:00:00 │
+│ service.availability.24h │    80 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-13 00:00:00 │
+│ service.availability.24h │    71 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-12 00:00:00 │
 └──────────────────────────┴───────┴─────────────────────────────────────────────────────────────┴─────────────────────┘
 ```
 
@@ -199,7 +199,7 @@ FROM (
             ELSE 0
         END AS successes
     FROM   
-      read_json('signals.audit.log', auto_detect = true, format = newline_delimited)
+      read_json('latte.audit.log', auto_detect = true, format = newline_delimited)
     GROUP  BY 
       "window",
       tags,

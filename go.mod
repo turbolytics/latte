@@ -1,4 +1,4 @@
-module github.com/turbolytics/collector
+module github.com/turbolytics/latte
 
 go 1.21.3
 

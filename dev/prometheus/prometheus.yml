@@ -26,12 +26,12 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'signals-collector-host'
+  - job_name: 'latte-host'
     scrape_interval: 10s
     static_configs:
       - targets: ['host.docker.internal:12223']
 
-  - job_name: 'signals-collector-compose'
+  - job_name: 'latte-compose'
     scrape_interval: 10s
     static_configs:
-      - targets: ['signals-collector:12223']
+      - targets: ['latte:12223']

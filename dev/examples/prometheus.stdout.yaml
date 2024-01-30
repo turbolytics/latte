@@ -26,7 +26,7 @@ source:
       window: 24h
     sql: |
       SELECT
-        'signals-collector' as service,
+        'latte' as service,
         CASE
           WHEN metric->>'result_status_code' = 'OK'
           THEN false
@@ -40,4 +40,4 @@ sinks:
   audit:
     type: file
     config:
-      path: /tmp/log/signals.audit.log
+      path: /tmp/log/latte.audit.log
