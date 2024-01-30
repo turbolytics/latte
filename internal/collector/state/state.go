@@ -3,7 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
-	"github.com/turbolytics/collector/internal/timeseries"
+	"github.com/turbolytics/latte/internal/timeseries"
 	"io"
 	"time"
 )

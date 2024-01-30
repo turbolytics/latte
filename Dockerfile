@@ -9,7 +9,7 @@ COPY cmd/ ./cmd
 COPY internal/ ./internal
 COPY go.mod/ ./go.mod
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o /signals-collector cmd/main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -o /latte cmd/main.go
 
-ENTRYPOINT ["/signals-collector"]
+ENTRYPOINT ["/latte"]
 

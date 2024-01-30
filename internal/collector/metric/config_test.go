@@ -2,7 +2,7 @@ package metric
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/collector/internal/collector/source"
+	"github.com/turbolytics/latte/internal/collector/source"
 	"testing"
 )
 

@@ -30,7 +30,7 @@ func ErrToStatus(err error) string {
 func NewResource() (*resource.Resource, error) {
 	return resource.Merge(resource.Default(),
 		resource.NewWithAttributes(semconv.SchemaURL,
-			semconv.ServiceName("signals-collector"),
+			semconv.ServiceName("latte"),
 		))
 }
 

@@ -66,10 +66,10 @@ services:
     depends_on:
       - zoo1
 
-  signals-collector:
-    image: turbolytics/signals-collector
-    hostname: signals-collector
-    container_name: signals-collector
+  latte:
+    image: turbolytics/latte
+    hostname: latte
+    container_name: latte
     ports:
       - 12223:12223
     environment:

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/collector/internal/cmd/config"
+	"github.com/turbolytics/latte/internal/cmd/config"
 	"os"
 )
 
@@ -21,7 +21,7 @@ func init() {
 
 var rootCmd = &cobra.Command{
 	Use:   "collector",
-	Short: "Signals Collector queries source systems to capture and emit signals",
+	Short: "latte queries source systems to capture and emit signals",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("root")

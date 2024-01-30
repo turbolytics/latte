@@ -39,7 +39,7 @@ sinks:
   audit:
     type: file
     config:
-      path: /tmp/log/signals.audit.log
+      path: /tmp/log/latte.audit.log
 
   vector:
     type: http

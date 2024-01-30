@@ -3,7 +3,7 @@ api:
   address: "0.0.0.0:8686"
 
 sources:
-  signals_source:
+  latte_source:
     type: "http_server"
     address: "0.0.0.0:9999"
     path: "/metrics"
@@ -13,7 +13,7 @@ sinks:
   console:
     type: console
     inputs:
-      - signals_source
+      - latte_source
     target: stdout
     encoding:
       codec: json

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"github.com/go-co-op/gocron/v2"
-	"github.com/turbolytics/collector/internal/collector"
+	"github.com/turbolytics/latte/internal/collector"
 	"go.uber.org/zap"
 )
 
