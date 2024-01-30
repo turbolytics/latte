@@ -1,21 +1,20 @@
 # Latte 
 
 <p align="center">
-    <img width="400" alt="Screenshot 2024-01-21 at 9 59 19 AM" src="https://github.com/turbolytics/latte/assets/151242797/d675ed25-1459-4df3-94f7-e452d9962251">
+    <img width="300" alt="Screenshot 2024-01-21 at 9 59 19 AM" src="https://github.com/turbolytics/latte/assets/151242797/d675ed25-1459-4df3-94f7-e452d9962251">
 </p>
 
 Latte is a modern data engineering toolkit. Latte provides out of the box config-driven help to reduce the time and cost for many common data engineering tasks, including:
 
-- Load
-- Aggregate
-- Transform
-- Transfer 
-- Extract 
+- **Load**: Load data into data sources for downstream analysis, such as kafka.
+- **Aggregate**: Aggregate operational data at the source to produce business analytics.
+- **Transform**: Transform data during processing.
+- **Transfer**: Transfer data from one system into another maintaining the original state.  
+- **Extract**: Extract data from a variety of sources, including Mongo, Postgres and Prometheus.
 
 Latte extracts and loads data from a variety of sources:
 
 <img width="625" alt="Screenshot 2024-01-29 at 7 15 22 PM" src="https://github.com/turbolytics/latte/assets/151242797/1f00acda-933d-4786-babe-b52b7378b5b0">
-
 
 ## Project Goals
 
