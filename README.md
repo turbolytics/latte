@@ -1,5 +1,9 @@
 # Latte 
 
+<p align="center">
+    <img width="400" alt="Screenshot 2024-01-21 at 9 59 19 AM" src="https://github.com/turbolytics/latte/assets/151242797/d675ed25-1459-4df3-94f7-e452d9962251">
+</p>
+
 Latte is a modern data engineering toolkit. Latte provides out of the box config-driven help to reduce the time and cost for many common data engineering tasks, including:
 
 - Load
@@ -7,6 +11,10 @@ Latte is a modern data engineering toolkit. Latte provides out of the box config
 - Transform
 - Transfer 
 - Extract 
+
+Latte extracts and loads data from a variety of sources:
+
+<img width="625" alt="Screenshot 2024-01-29 at 7 15 22 PM" src="https://github.com/turbolytics/latte/assets/151242797/1f00acda-933d-4786-babe-b52b7378b5b0">
 
 
 ## Project Goals
@@ -17,7 +25,11 @@ Latte aims to:
 - Increase data warehouse data fidelity.
 - Reduce data lake sprawl.
 - Reduce data transfer into and costs of querying datalakes and datawarehouses.
-- Enable product engineers to write self service analytics built on their operational data stores.
+- Enable product engineers to write self-service analytics built on their operational data stores.
+
+Latte is configured using simple yaml configuration files:
+
+<img width="911" alt="Screenshot 2023-12-24 at 9 05 22 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/80a59dcc-4f5e-4dd3-95bb-b9402cb3e6e7">
 
 
 ## Getting Started 
@@ -130,3 +142,7 @@ Checkout the [examples directory](./dev/examples) for configuration examples.
 ## Additional Documentation
 
 Additional documentation is available in the [docs/ directory](./docs)
+
+----
+
+<a href="https://www.freepik.com/free-vector/cute-happy-coffee-cup-cartoon-vector-icon-illustration-drink-character-icon-concept-flat-cartoon-style_12090270.htm#query=coffee%20cartoon&position=14&from_view=search&track=ais&uuid=488418ce-32c1-4adf-9001-a7409e29a639">Image by catalyststuff</a> on Freepik

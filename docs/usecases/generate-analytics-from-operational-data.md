@@ -8,7 +8,7 @@ Latte produces analytic telemetry, allowing business analytics and business stak
 - [Mongodb](https://www.mongodb.com/)
 - [Promtheus](https://prometheus.io/)
 
-<img width="598" alt="Screenshot 2024-01-03 at 6 38 59 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/4981607a-6dd9-49e8-8781-402b1e816c91">
+<img width="625" alt="Screenshot 2024-01-29 at 7 15 22 PM" src="https://github.com/turbolytics/latte/assets/151242797/1f00acda-933d-4786-babe-b52b7378b5b0">
 
 Latte is a new class of tooling for Extract Transform and Aggregation (ETA). latte aggregates data at the source and only emits the aggregations for downstream processing in the datalake or datawarehouse:
 
@@ -23,7 +23,7 @@ CREATE TABLE users (
 );
 ```
 
-latte aggregates data at the source and only emits the aggregated data, at the grain consumed by end users. Imagine the users has 2 customers, amazon and google, with 1MM users:
+Latte aggregates data at the source and only emits the aggregated data, at the grain consumed by end users. Imagine the users has 2 customers, amazon and google, with 1MM users:
 
 ```
 INSERT INTO users VALUES ('amazon', NOW());
@@ -34,7 +34,7 @@ INSERT INTO users VALUES ('google', NOW());
 ...
 ```
 
-latte can aggregate user counts at the source:
+Latte can aggregate user counts at the source:
 
 <img width="911" alt="Screenshot 2023-12-24 at 9 05 22 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/80a59dcc-4f5e-4dd3-95bb-b9402cb3e6e7">
 
@@ -65,7 +65,7 @@ This will produce 2 data points per day, reducing the need to egress millions of
 }
 ```
 
-latte takes a different approach to data analytics when compared to tools such as [fivetran](https://www.fivetran.com/) and [airbyte](https://airbyte.com/). These tools focus on copying operational data sources for downstream analysis:
+Latte takes a different approach to data analytics when compared to tools such as [fivetran](https://www.fivetran.com/) and [airbyte](https://airbyte.com/). These tools focus on copying operational data sources for downstream analysis:
 
 <img width="600" alt="Screenshot 2023-12-23 at 7 45 56 AM" src="https://github.com/turbolytics/signals-collector/assets/151242797/d17f07ef-5744-4210-a652-f836ceb399df">
 
