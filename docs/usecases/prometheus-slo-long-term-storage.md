@@ -4,7 +4,7 @@ Prometheus is a timeseries data store for operational telemetry. Prometheus is u
 
 This tutorial shows how latte is used to capture prometheus SLO data for long term storage in a datalake or datawarehouse.
 
-<img width="713" alt="Screenshot 2024-01-07 at 1 01 52 PM" src="https://github.com/turbolytics/signals-collector/assets/151242797/c8d9f6fe-8a31-42c9-85a1-00001f2fb3c4">
+<img width="676" alt="Screenshot 2024-01-29 at 7 11 53 PM" src="https://github.com/turbolytics/latte/assets/151242797/4023f04e-9bf3-4538-ae5e-fee750bc7350">
 
 The latte will:
 
@@ -163,17 +163,17 @@ D select name, value, tags, "window" from read_json('latte.audit.log', auto_dete
 │           name           │ value │                            tags                             │       window        │
 │         varchar          │ int64 │     struct(env varchar, error varchar, service varchar)     │      timestamp      │
 ├──────────────────────────┼───────┼─────────────────────────────────────────────────────────────┼─────────────────────┤
-│ service.availability.24h │    41 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-15 00:00:00 │
-│ service.availability.24h │    61 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-14 00:00:00 │
-│ service.availability.24h │     2 │ {'env': prod, 'error': true, 'service': latte}  │ 2024-01-14 00:00:00 │
-│ service.availability.24h │    80 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-13 00:00:00 │
-│ service.availability.24h │    71 │ {'env': prod, 'error': false, 'service': latte} │ 2024-01-12 00:00:00 │
+│ service.availability.24h │    41 │ {'env': prod, 'error': false, 'service': latte}             │ 2024-01-15 00:00:00 │
+│ service.availability.24h │    61 │ {'env': prod, 'error': false, 'service': latte}             │ 2024-01-14 00:00:00 │
+│ service.availability.24h │     2 │ {'env': prod, 'error': true, 'service': latte}              │ 2024-01-14 00:00:00 │
+│ service.availability.24h │    80 │ {'env': prod, 'error': false, 'service': latte}             │ 2024-01-13 00:00:00 │
+│ service.availability.24h │    71 │ {'env': prod, 'error': false, 'service': latte}             │ 2024-01-12 00:00:00 │
 └──────────────────────────┴───────┴─────────────────────────────────────────────────────────────┴─────────────────────┘
 ```
 
 The collector counts successes and errors per day. Notice how some collections do not include errors.
 
-Availability can be calculated after the data is collected. Availability is a ratio and calculated over an interval. Availbility is defined as:
+Availability can be calculated after the data is collected. Availability is a ratio and calculated over an interval. Availability is defined as:
 
 ```
 sum(success) 
