@@ -2,11 +2,10 @@ package partition
 
 import (
 	"github.com/turbolytics/latte/internal/collector/schedule"
-	"github.com/turbolytics/latte/internal/collector/sink"
 	"github.com/turbolytics/latte/internal/collector/source"
 	"github.com/turbolytics/latte/internal/collector/state"
 	"github.com/turbolytics/latte/internal/collector/transform"
-	"github.com/turbolytics/latte/internal/sinks"
+	"github.com/turbolytics/latte/internal/sink"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -32,8 +31,8 @@ func (c Config) GetSchedule() schedule.Schedule {
 	return c.Schedule
 }
 
-func (c Config) GetSinks() []sinks.Sinker {
-	var ss []sinks.Sinker
+func (c Config) GetSinks() []sink.Sinker {
+	var ss []sink.Sinker
 	for _, s := range c.Sinks {
 		ss = append(ss, s.Sinker)
 	}
