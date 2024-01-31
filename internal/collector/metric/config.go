@@ -2,7 +2,6 @@ package metric
 
 import (
 	"fmt"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/postgres"
 	"github.com/turbolytics/latte/internal/collector/schedule"
 	"github.com/turbolytics/latte/internal/collector/sink"
 	configSource "github.com/turbolytics/latte/internal/collector/source"
@@ -11,6 +10,7 @@ import (
 	"github.com/turbolytics/latte/internal/metrics"
 	"github.com/turbolytics/latte/internal/sinks"
 	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/source/metric/postgres"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )

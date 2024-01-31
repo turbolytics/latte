@@ -1,6 +1,7 @@
 package result
 
 import (
+	"github.com/turbolytics/latte/internal/collector/config"
 	"github.com/turbolytics/latte/internal/metrics"
 	"github.com/turbolytics/latte/internal/source"
 )
@@ -11,7 +12,7 @@ type Metrics struct {
 	metrics []*metrics.Metric
 }
 
-func (m *Metrics) Transform() error {
+func (m *Metrics) Transform(c config.Config) error {
 	/*
 		metricConfig := c.(metric.Config)
 
