@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/mitchellh/mapstructure"
 	"github.com/segmentio/kafka-go"
+	"github.com/turbolytics/latte/internal/sinks"
 )
 
 type config struct {
@@ -19,6 +20,10 @@ type Kafka struct {
 
 func (k *Kafka) Close() error {
 	return k.writer.Close()
+}
+
+func (k *Kafka) Type() sinks.Type {
+	return sinks.TypeKafka
 }
 
 func (k *Kafka) Write(bs []byte) (int, error) {

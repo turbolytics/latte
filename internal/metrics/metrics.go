@@ -29,6 +29,10 @@ type Metric struct {
 	Window *time.Time `json:"window"`
 }
 
+func (m *Metric) Bytes() ([]byte, error) {
+	return nil, nil
+}
+
 func New(opts ...MetricOption) Metric {
 	m := Metric{
 		UUID:      uuid.New().String(),

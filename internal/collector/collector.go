@@ -7,8 +7,10 @@ import (
 	latteMetric "github.com/turbolytics/latte/internal/collector/metric"
 	"github.com/turbolytics/latte/internal/collector/partition"
 	"github.com/turbolytics/latte/internal/collector/schedule"
+	collSource "github.com/turbolytics/latte/internal/collector/source"
 	"github.com/turbolytics/latte/internal/obs"
 	"github.com/turbolytics/latte/internal/sinks"
+	"github.com/turbolytics/latte/internal/source"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -25,23 +27,11 @@ type Config interface {
 	CollectorName() string
 	GetSinks() []sinks.Sinker
 	GetSchedule() schedule.Schedule
-}
-
-type Collector interface {
-	Invoke(context.Context) error
-}
-
-type InvokerOption func(*Invoker)
-
-func InvokerWithLogger(l *zap.Logger) InvokerOption {
-	return func(c *Invoker) {
-		c.logger = l
-	}
+	GetSource() collSource.Config
 }
 
 type Invoker struct {
-	Collector Collector
-	Config    Config
+	Config Config
 
 	logger *zap.Logger
 	now    func() time.Time
@@ -100,7 +90,95 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 		zap.String("name", i.Config.CollectorName()),
 	)
 	ctx = context.WithValue(ctx, "id", id)
-	return i.Collector.Invoke(ctx)
+
+	s := i.Config.GetSource()
+	switch s.Strategy {
+	case collSource.TypeStrategyHistoricTumblingWindow:
+		fmt.Println("tumbling window")
+	case collSource.TypeStrategyTick:
+		return i.invokeTick(ctx)
+	default:
+		return fmt.Errorf("strategy: %q not supported", s.Strategy)
+	}
+
+	return nil
+}
+
+func (i *Invoker) Source(ctx context.Context) (source.Result, error) {
+	panic("implement source")
+	/*
+		s := i.Config.GetSource()
+		sr, err := s.Sourcer.Source(ctx)
+	*/
+	return nil, nil
+}
+
+func (i *Invoker) invokeTick(ctx context.Context) error {
+	id := ctx.Value("id").(uuid.UUID)
+
+	sr, err := i.Source(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(sr.Records()) == 0 {
+		i.logger.Warn(
+			"collector.Invoke",
+			zap.String("msg", "no results found"),
+			zap.String("id", id.String()),
+			zap.String("name", i.Config.CollectorName()),
+		)
+	}
+
+	// how to get additional context to transform function?
+	if err := sr.Transform(); err != nil {
+		return err
+	}
+
+	if err = i.Sink(ctx, sr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (i *Invoker) Sink(ctx context.Context, res source.Result) error {
+
+	histogram, _ := meter.Float64Histogram(
+		"collector.sink.duration",
+		metric.WithUnit("s"),
+	)
+	// add tags from config
+	rs := res.Records()
+
+	sinks := i.Config.GetSinks()
+
+	// need to add a serializer
+	for _, r := range rs {
+		bs, err := r.Bytes()
+		if err != nil {
+			return err
+		}
+		for _, s := range sinks {
+			start := time.Now().UTC()
+
+			_, err := s.Write(bs)
+
+			duration := time.Since(start)
+			histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
+				attribute.NewSet(
+					attribute.String("result.status_code", obs.ErrToStatus(err)),
+					attribute.String("sink.name", string(s.Type())),
+				),
+			))
+
+			if err != nil {
+				return err
+			}
+
+		}
+	}
+	return nil
 }
 
 func NewFromGlob(glob string, opts ...RootOption) ([]*Invoker, error) {
@@ -141,7 +219,7 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 		return nil, err
 	}
 
-	var coll Collector
+	// var coll Collector
 	var collConfig Config
 
 	var err error
@@ -155,10 +233,12 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 		if err != nil {
 			return nil, err
 		}
-		coll, err = latteMetric.NewCollector(
-			mc,
-			latteMetric.CollectorWithLogger(conf.logger),
-		)
+		/*
+			coll, err = latteMetric.NewCollector(
+				mc,
+				latteMetric.CollectorWithLogger(conf.logger),
+			)
+		*/
 		collConfig = mc
 	case TypePartition:
 		pc, err := partition.NewConfig(
@@ -169,10 +249,12 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 		if err != nil {
 			return nil, err
 		}
-		coll, err = partition.NewCollector(
-			pc,
-			partition.CollectorWithLogger(conf.logger),
-		)
+		/*
+			coll, err = partition.NewCollector(
+				pc,
+				partition.CollectorWithLogger(conf.logger),
+			)
+		*/
 		collConfig = pc
 
 	default:
@@ -180,8 +262,7 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 	}
 
 	i := &Invoker{
-		Config:    collConfig,
-		Collector: coll,
+		Config: collConfig,
 
 		logger: conf.logger,
 	}

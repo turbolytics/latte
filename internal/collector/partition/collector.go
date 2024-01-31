@@ -1,17 +1,7 @@
 package partition
 
 import (
-	"context"
-	"fmt"
-	"github.com/google/uuid"
-	"github.com/turbolytics/latte/internal/collector/source"
-	"github.com/turbolytics/latte/internal/collector/state"
-	"github.com/turbolytics/latte/internal/obs"
-	"github.com/turbolytics/latte/internal/partition"
-	"github.com/turbolytics/latte/internal/timeseries"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"time"
 )
@@ -24,6 +14,7 @@ type Collector struct {
 	now    func() time.Time
 }
 
+/*
 func (c *Collector) invokeHistoricTumblingWindow(ctx context.Context) ([]*partition.Partition, error) {
 	i, err := c.config.StateStore.Storer.MostRecentInvocation(
 		ctx,
@@ -104,23 +95,6 @@ func (c *Collector) Sink(ctx context.Context, p *partition.Partition) error {
 	return nil
 }
 
-/*
-type source.Result interface {
-	Transform() error
-	Rows() ([]any, error)
-}
-
-- Source becomes generic
-Source(ctx) (source.Result, error) {
-}
-
-- Sink becomes generic
-Sink(ctx, sr source.Result) error {
-}
-
-
-
-*/
 
 func (c *Collector) Source(ctx context.Context) (p *partition.Partition, err error) {
 	start := time.Now().UTC()
@@ -223,3 +197,4 @@ func NewCollector(config *Config, opts ...CollectorOption) (*Collector, error) {
 
 	return c, nil
 }
+*/

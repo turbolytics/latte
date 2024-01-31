@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/partition"
+	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
 	"net/url"
@@ -57,7 +58,23 @@ func (s *Source) Window() *time.Duration {
 	return s.config.Time.Duration()
 }
 
-func (s *Source) Source(ctx context.Context) (*partition.Partition, error) {
+type Record struct{}
+
+func (r Record) Bytes() ([]byte, error) {
+	return nil, nil
+}
+
+type Result struct{}
+
+func (r *Result) Transform() error {
+	return nil
+}
+
+func (r *Result) Records() ([]Record, error) {
+	return nil, nil
+}
+
+func (s *Source) Source(ctx context.Context) (source.Result, error) {
 	windowStart := ctx.Value("window.start").(time.Time)
 
 	// parse the template
@@ -88,8 +105,9 @@ func (s *Source) Source(ctx context.Context) (*partition.Partition, error) {
 	p := partition.Partition{
 		URI: &u,
 	}
+	fmt.Println(p)
 
-	return &p, nil
+	return nil, nil
 }
 
 func NewFromGenericConfig(m map[string]any, opts ...Option) (*Source, error) {

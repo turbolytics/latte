@@ -1,11 +1,9 @@
 package source
 
 import (
-	"context"
 	"fmt"
 	"github.com/turbolytics/latte/internal/collector/partition/sources/s3"
-	"github.com/turbolytics/latte/internal/metrics"
-	"github.com/turbolytics/latte/internal/partition"
+	"github.com/turbolytics/latte/internal/source"
 	"time"
 )
 
@@ -26,32 +24,15 @@ const (
 	TypeStrategyTick                   TypeStrategy = "tick"
 )
 
-type MetricSourcer interface {
-	Source(ctx context.Context) ([]*metrics.Metric, error)
-	Window() *time.Duration
-}
-
-type PartitionSourcer interface {
-	Source(ctx context.Context) (*partition.Partition, error)
-	Window() *time.Duration
-}
-
 type Config struct {
 	Strategy TypeStrategy
 	Config   map[string]any
 	Type     Type
-
-	MetricSourcer    MetricSourcer
-	PartitionSourcer PartitionSourcer
+	Sourcer  source.Sourcer
 }
 
 func (c Config) Window() *time.Duration {
-	if c.MetricSourcer != nil {
-		return c.MetricSourcer.Window()
-	} else if c.PartitionSourcer != nil {
-		return c.PartitionSourcer.Window()
-	}
-	return nil
+	return c.Sourcer.Window()
 }
 
 func (c Config) Validate() error {
@@ -74,7 +55,7 @@ func (c *Config) SetDefaults() {
 }
 
 func (c *Config) Init() error {
-	var s PartitionSourcer
+	var s source.Sourcer
 	var err error
 	switch c.Type {
 	case TypePartitionS3:
@@ -85,6 +66,6 @@ func (c *Config) Init() error {
 	if err != nil {
 		return err
 	}
-	c.PartitionSourcer = s
+	c.Sourcer = s
 	return nil
 }

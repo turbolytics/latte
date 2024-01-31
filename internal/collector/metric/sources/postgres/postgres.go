@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	_ "github.com/lib/pq"
 	"github.com/mitchellh/mapstructure"
+	"github.com/turbolytics/latte/internal/collector/metric/sources"
 	scsql "github.com/turbolytics/latte/internal/collector/metric/sources/sql"
 	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/source"
 	"time"
 )
 
@@ -24,7 +26,7 @@ func (p *Postgres) Window() *time.Duration {
 	return nil
 }
 
-func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
+func (p *Postgres) Source(ctx context.Context) (source.Result, error) {
 	rows, err := p.db.QueryContext(ctx, p.config.SQL)
 	if err != nil {
 		return nil, err
@@ -37,7 +39,10 @@ func (p *Postgres) Source(ctx context.Context) ([]*metrics.Metric, error) {
 	}
 
 	ms, err := metrics.MapsToMetrics(results)
-	return ms, err
+
+	metricsResult := sources.NewMetricsResult(ms)
+
+	return metricsResult, err
 }
 
 func NewFromGenericConfig(m map[string]any, validate bool) (*Postgres, error) {

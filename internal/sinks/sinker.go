@@ -12,6 +12,7 @@ const (
 // Sinker is responsible for sinking
 // TODO - Starting with an io.Writer for right now.
 type Sinker interface {
+	Type() Type
 	Write([]byte) (int, error)
 	Close() error
 }

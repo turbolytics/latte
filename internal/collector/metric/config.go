@@ -1,18 +1,16 @@
 package metric
 
 import (
-	"context"
 	"fmt"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/mongodb"
 	"github.com/turbolytics/latte/internal/collector/metric/sources/postgres"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/prometheus"
 	"github.com/turbolytics/latte/internal/collector/schedule"
 	"github.com/turbolytics/latte/internal/collector/sink"
-	"github.com/turbolytics/latte/internal/collector/source"
+	configSource "github.com/turbolytics/latte/internal/collector/source"
 	"github.com/turbolytics/latte/internal/collector/state"
 	"github.com/turbolytics/latte/internal/collector/template"
 	"github.com/turbolytics/latte/internal/metrics"
 	"github.com/turbolytics/latte/internal/sinks"
+	"github.com/turbolytics/latte/internal/source"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -36,13 +34,17 @@ type Config struct {
 	Name       string
 	Metric     Metric
 	Schedule   schedule.Schedule
-	Source     source.Config
+	Source     configSource.Config
 	Sinks      map[string]sink.Config
 	StateStore state.Config `yaml:"state_store"`
 
 	logger *zap.Logger
 	// validate will skip initializing network dependencies
 	validate bool
+}
+
+func (c Config) GetSource() configSource.Config {
+	return c.Source
 }
 
 func (c Config) GetSchedule() schedule.Schedule {
@@ -77,25 +79,28 @@ func ConfigWithLogger(l *zap.Logger) ConfigOption {
 
 // initSource initializes the correct source.
 func initSource(c *Config) error {
-	var s source.MetricSourcer
+	var s source.Sourcer
 	var err error
 	switch c.Source.Type {
-	case source.TypePostgres:
+	case configSource.TypePostgres:
 		s, err = postgres.NewFromGenericConfig(
 			c.Source.Config,
 			c.validate,
 		)
-	case source.TypeMongoDB:
-		s, err = mongodb.NewFromGenericConfig(
-			context.TODO(),
-			c.Source.Config,
-			c.validate,
-		)
-	case source.TypePrometheus:
-		s, err = prometheus.NewFromGenericConfig(
-			c.Source.Config,
-			prometheus.WithLogger(c.logger),
-		)
+		/*
+			case source.TypeMongoDB:
+				s, err = mongodb.NewFromGenericConfig(
+					context.TODO(),
+					c.Source.Config,
+					c.validate,
+				)
+			case source.TypePrometheus:
+				s, err = prometheus.NewFromGenericConfig(
+					c.Source.Config,
+					prometheus.WithLogger(c.logger),
+				)
+
+		*/
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)
 	}
@@ -104,7 +109,7 @@ func initSource(c *Config) error {
 		return err
 	}
 
-	c.Source.MetricSourcer = s
+	c.Source.Sourcer = s
 	return nil
 }
 

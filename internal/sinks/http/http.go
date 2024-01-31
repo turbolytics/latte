@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"github.com/mitchellh/mapstructure"
+	"github.com/turbolytics/latte/internal/sinks"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -31,6 +32,10 @@ type HTTP struct {
 
 func (h *HTTP) Close() error {
 	return nil
+}
+
+func (h *HTTP) Type() sinks.Type {
+	return sinks.TypeHTTP
 }
 
 func (h *HTTP) Write(bs []byte) (int, error) {

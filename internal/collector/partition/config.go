@@ -24,6 +24,10 @@ type Config struct {
 	validate bool
 }
 
+func (c Config) GetSource() source.Config {
+	return c.Source
+}
+
 func (c Config) CollectorName() string {
 	return c.Name
 }

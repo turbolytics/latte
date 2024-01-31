@@ -1,18 +1,7 @@
 package metric
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/google/uuid"
-	"github.com/turbolytics/latte/internal/collector/source"
-	"github.com/turbolytics/latte/internal/collector/state"
-	"github.com/turbolytics/latte/internal/metrics"
-	"github.com/turbolytics/latte/internal/obs"
-	"github.com/turbolytics/latte/internal/timeseries"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"time"
 )
@@ -26,6 +15,7 @@ type Collector struct {
 	now    func() time.Time
 }
 
+/*
 func (c *Collector) Transform(ms []*metrics.Metric) error {
 	for _, m := range ms {
 		m.Name = c.Config.Metric.Name
@@ -272,3 +262,5 @@ func NewCollector(config *Config, opts ...CollectorOption) (*Collector, error) {
 	}
 	return c, nil
 }
+
+*/
