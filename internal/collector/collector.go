@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/turbolytics/latte/internal/collector/config"
 	latteMetric "github.com/turbolytics/latte/internal/collector/metric"
 	"github.com/turbolytics/latte/internal/collector/partition"
-	"github.com/turbolytics/latte/internal/collector/schedule"
 	collSource "github.com/turbolytics/latte/internal/collector/source"
 	"github.com/turbolytics/latte/internal/obs"
-	"github.com/turbolytics/latte/internal/sinks"
 	"github.com/turbolytics/latte/internal/source"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -23,15 +22,8 @@ import (
 
 var meter = otel.Meter("latte-collector")
 
-type Config interface {
-	CollectorName() string
-	GetSinks() []sinks.Sinker
-	GetSchedule() schedule.Schedule
-	GetSource() collSource.Config
-}
-
 type Invoker struct {
-	Config Config
+	Config config.Config
 
 	logger *zap.Logger
 	now    func() time.Time
@@ -104,13 +96,41 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 	return nil
 }
 
-func (i *Invoker) Source(ctx context.Context) (source.Result, error) {
-	panic("implement source")
-	/*
-		s := i.Config.GetSource()
-		sr, err := s.Sourcer.Source(ctx)
-	*/
-	return nil, nil
+func (i *Invoker) Source(ctx context.Context) (sr source.Result, err error) {
+	start := time.Now().UTC()
+
+	histogram, _ := meter.Float64Histogram(
+		"collector.source.duration",
+		metric.WithUnit("s"),
+	)
+
+	s := i.Config.GetSource()
+
+	defer func() {
+		duration := time.Since(start)
+
+		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
+			attribute.NewSet(
+				attribute.String("result.status_code", obs.ErrToStatus(err)),
+				attribute.String("source.type", string(s.Type)),
+			),
+		))
+
+		meter.Int64ObservableGauge(
+			"collector.source.metrics.total",
+			metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+				o.Observe(int64(len(sr.Records())), metric.WithAttributeSet(
+					attribute.NewSet(
+						attribute.String("source.type", string(s.Type)),
+					),
+				))
+				return nil
+			}),
+		)
+	}()
+
+	sr, err = s.Sourcer.Source(ctx)
+	return sr, err
 }
 
 func (i *Invoker) invokeTick(ctx context.Context) error {
@@ -220,7 +240,7 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 	}
 
 	// var coll Collector
-	var collConfig Config
+	var collConfig config.Config
 
 	var err error
 	switch conf.Collector.Type {
@@ -239,6 +259,8 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 				latteMetric.CollectorWithLogger(conf.logger),
 			)
 		*/
+		// build the concrete transformer here....
+		// transformer := latteMetric.NewTransformer(mc.Metric)
 		collConfig = mc
 	case TypePartition:
 		pc, err := partition.NewConfig(

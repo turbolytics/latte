@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	_ "github.com/lib/pq"
 	"github.com/mitchellh/mapstructure"
-	"github.com/turbolytics/latte/internal/collector/metric/sources"
+	"github.com/turbolytics/latte/internal/collector/metric/sources/result"
 	scsql "github.com/turbolytics/latte/internal/collector/metric/sources/sql"
 	"github.com/turbolytics/latte/internal/metrics"
 	"github.com/turbolytics/latte/internal/source"
@@ -40,7 +40,7 @@ func (p *Postgres) Source(ctx context.Context) (source.Result, error) {
 
 	ms, err := metrics.MapsToMetrics(results)
 
-	metricsResult := sources.NewMetricsResult(ms)
+	metricsResult := result.NewMetricsResult(ms)
 
 	return metricsResult, err
 }

@@ -43,6 +43,10 @@ type Config struct {
 	validate bool
 }
 
+func (c Config) GetMetric() *Metric {
+	return &c.Metric
+}
+
 func (c Config) GetSource() configSource.Config {
 	return c.Source
 }
