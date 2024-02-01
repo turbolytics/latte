@@ -2,12 +2,12 @@ package metric
 
 import (
 	"context"
-	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/metric"
 	"time"
 )
 
 type TestSourcer struct {
-	Ms  []*metrics.Metric
+	Ms  []*metric.Metric
 	Err error
 
 	WindowDuration time.Duration
@@ -18,7 +18,7 @@ func (ts *TestSourcer) Window() *time.Duration {
 	return &ts.WindowDuration
 }
 
-func (ts *TestSourcer) Source(ctx context.Context) ([]*metrics.Metric, error) {
+func (ts *TestSourcer) Source(ctx context.Context) ([]*metric.Metric, error) {
 	ts.SourceCalls = append(ts.SourceCalls, ctx)
 	return ts.Ms, ts.Err
 }

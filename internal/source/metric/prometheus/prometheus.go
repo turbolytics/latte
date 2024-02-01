@@ -9,7 +9,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
-	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/metric"
 	scsql "github.com/turbolytics/latte/internal/sql"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
@@ -157,7 +157,7 @@ func (p *Prometheus) Window() *time.Duration {
 	return p.config.Time.Duration()
 }
 
-func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
+func (p *Prometheus) Source(ctx context.Context) ([]*metric.Metric, error) {
 	// This is already starting to devolve :sweat:
 	windowStart := ctx.Value("window.start").(time.Time)
 	windowEnd := ctx.Value("window.end").(time.Time)
@@ -178,7 +178,7 @@ func (p *Prometheus) Source(ctx context.Context) ([]*metrics.Metric, error) {
 		return nil, err
 	}
 
-	ms, err := metrics.MapsToMetrics(results)
+	ms, err := metric.MapsToMetrics(results)
 	if err == nil {
 		for _, m := range ms {
 			m.Window = &windowStart

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbolytics/latte/internal/collector/template"
-	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
@@ -27,7 +27,7 @@ type Tag struct {
 
 type Metric struct {
 	Name string
-	Type metrics.Type
+	Type metric.Type
 	Tags []Tag
 }
 

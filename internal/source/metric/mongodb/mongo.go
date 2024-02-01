@@ -3,7 +3,7 @@ package mongodb
 import (
 	"context"
 	"github.com/mitchellh/mapstructure"
-	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/metric"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -27,7 +27,7 @@ func (m *Mongo) Window() *time.Duration {
 	return nil
 }
 
-func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
+func (m *Mongo) Source(ctx context.Context) ([]*metric.Metric, error) {
 	p, err := ParseAgg(m.config.Agg)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (m *Mongo) Source(ctx context.Context) ([]*metrics.Metric, error) {
 		rs = append(rs, r)
 	}
 
-	ms, err := metrics.MapsToMetrics(rs)
+	ms, err := metric.MapsToMetrics(rs)
 	return ms, err
 }
 
