@@ -13,17 +13,17 @@ func TestSchedule_Validate(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		schedule Schedule
+		schedule Config
 		err      error
 	}{
 		{
 			name:     "must_not_miss_interval_and_cron",
-			schedule: Schedule{},
+			schedule: Config{},
 			err:      fmt.Errorf("must set invocation.interval or invocation.cron"),
 		},
 		{
 			name: "must_not_have_interval_and_cron",
-			schedule: Schedule{
+			schedule: Config{
 				Interval: &h,
 				Cron:     &c,
 			},
@@ -31,7 +31,7 @@ func TestSchedule_Validate(t *testing.T) {
 		},
 		{
 			name: "must_have_valid_strategy",
-			schedule: Schedule{
+			schedule: Config{
 				Cron: &c,
 			},
 			err: fmt.Errorf("unknown strategy: \"\""),

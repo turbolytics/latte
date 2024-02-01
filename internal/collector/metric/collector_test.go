@@ -6,9 +6,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/turbolytics/latte/internal/collector/metric/sources"
-	"github.com/turbolytics/latte/internal/collector/state"
 	"github.com/turbolytics/latte/internal/metrics"
 	"github.com/turbolytics/latte/internal/source"
+	state2 "github.com/turbolytics/latte/internal/state"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
 	"testing"
@@ -78,7 +78,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		Ms:             expectedMetrics,
 		WindowDuration: time.Minute,
 	}
-	ss, _ := state.NewMemoryStoreFromGenericConfig(map[string]any{})
+	ss, _ := state2.NewMemoryStoreFromGenericConfig(map[string]any{})
 
 	coll := &Collector{
 		logger: zap.NewNop(),
@@ -87,7 +87,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		},
 		Config: &Config{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state2.Config{
 				Storer: ss,
 			},
 			Source: source.Config{
@@ -121,7 +121,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 	)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &state.Invocation{
+	assert.Equal(t, &state2.Invocation{
 		CollectorName: "test_collector",
 		Time:          now,
 		Window: &timeseries.Window{
@@ -137,8 +137,8 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 	ts := &sources.TestSourcer{
 		WindowDuration: time.Hour,
 	}
-	ss, _ := state.NewMemoryStoreFromGenericConfig(map[string]any{})
-	ss.SaveInvocation(&state.Invocation{
+	ss, _ := state2.NewMemoryStoreFromGenericConfig(map[string]any{})
+	ss.SaveInvocation(&state2.Invocation{
 		CollectorName: "test_collector",
 		Window: &timeseries.Window{
 			Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
@@ -153,7 +153,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		},
 		Config: &Config{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state2.Config{
 				Storer: ss,
 			},
 			Source: source.Config{
@@ -184,8 +184,8 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		Ms:             expectedMetrics,
 		WindowDuration: time.Hour,
 	}
-	ss, _ := state.NewMemoryStoreFromGenericConfig(map[string]any{})
-	err := ss.SaveInvocation(&state.Invocation{
+	ss, _ := state2.NewMemoryStoreFromGenericConfig(map[string]any{})
+	err := ss.SaveInvocation(&state2.Invocation{
 		CollectorName: "test_collector",
 		Window: &timeseries.Window{
 			Start: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
@@ -201,7 +201,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		},
 		Config: &Config{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state2.Config{
 				Storer: ss,
 			},
 			Source: source.Config{
@@ -235,7 +235,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 	)
 	fmt.Println(i.Window, err)
 	assert.NoError(t, err)
-	assert.Equal(t, &state.Invocation{
+	assert.Equal(t, &state2.Invocation{
 		CollectorName: "test_collector",
 		Time:          now,
 		Window: &timeseries.Window{

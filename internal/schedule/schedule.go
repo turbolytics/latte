@@ -5,12 +5,12 @@ import (
 	"time"
 )
 
-type Schedule struct {
+type Config struct {
 	Interval *time.Duration
 	Cron     *string
 }
 
-func (s Schedule) Validate() error {
+func (s Config) Validate() error {
 	if s.Interval == nil && s.Cron == nil {
 		return fmt.Errorf("must set invocation.interval or invocation.cron")
 	}

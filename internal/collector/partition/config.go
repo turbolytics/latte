@@ -1,18 +1,18 @@
 package partition
 
 import (
-	"github.com/turbolytics/latte/internal/collector/schedule"
-	"github.com/turbolytics/latte/internal/collector/state"
-	"github.com/turbolytics/latte/internal/collector/transform"
+	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/state"
+	"github.com/turbolytics/latte/internal/transform"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
 	Name       string
-	Schedule   schedule.Schedule
+	Schedule   schedule.Config
 	StateStore state.Config `yaml:"state_store"`
 	Source     source.Config
 	Transform  transform.Config
@@ -27,7 +27,7 @@ func (c Config) CollectorName() string {
 	return c.Name
 }
 
-func (c Config) GetSchedule() schedule.Schedule {
+func (c Config) GetSchedule() schedule.Config {
 	return c.Schedule
 }
 
