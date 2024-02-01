@@ -3,9 +3,9 @@ package source
 import (
 	"context"
 	"fmt"
-	"github.com/turbolytics/latte/internal/collector/partition/sources/s3"
-	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/partition"
+	"github.com/turbolytics/latte/internal/source/partition/s3"
 	"time"
 )
 
@@ -27,7 +27,7 @@ const (
 )
 
 type MetricSourcer interface {
-	Source(ctx context.Context) ([]*metrics.Metric, error)
+	Source(ctx context.Context) ([]*metric.Metric, error)
 	Window() *time.Duration
 }
 

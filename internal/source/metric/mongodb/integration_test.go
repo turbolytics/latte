@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
-	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/metric"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"testing"
@@ -90,7 +90,7 @@ func TestIntegration_Mongo_Source(t *testing.T) {
 		m.UUID = ""
 	}
 
-	assert.Equal(t, []*metrics.Metric{
+	assert.Equal(t, []*metric.Metric{
 		{
 			Value: 2,
 			Tags: map[string]string{

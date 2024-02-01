@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/latte/internal/collector/metric/sources"
-	"github.com/turbolytics/latte/internal/collector/source"
-	"github.com/turbolytics/latte/internal/collector/state"
-	"github.com/turbolytics/latte/internal/metrics"
+	latteMetric "github.com/turbolytics/latte/internal/metric"
+	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/source/metric"
+	"github.com/turbolytics/latte/internal/state"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
 	"testing"
@@ -26,14 +26,14 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	ms := []*metrics.Metric{{
+	ms := []*latteMetric.Metric{{
 		Tags: make(map[string]string),
 	}}
 
 	err = coll.Transform(ms)
 
 	assert.NoError(t, err)
-	assert.Equal(t, []*metrics.Metric{{
+	assert.Equal(t, []*latteMetric.Metric{{
 		Tags: map[string]string{
 			"key1": "val1",
 			"key2": "val2",
@@ -42,13 +42,13 @@ func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
 }
 
 func TestCollector_Source_ValidMetrics(t *testing.T) {
-	expectedMetrics := []*metrics.Metric{
+	expectedMetrics := []*latteMetric.Metric{
 		{
 			Name: "test.metric",
 		},
 	}
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		Ms: expectedMetrics,
 	}
 
@@ -66,7 +66,7 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 }
 
 func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
-	expectedMetrics := []*metrics.Metric{
+	expectedMetrics := []*latteMetric.Metric{
 		{
 			Name: "test.metric",
 		},
@@ -74,7 +74,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 1, 1, 0, 0, time.UTC)
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		Ms:             expectedMetrics,
 		WindowDuration: time.Minute,
 	}
@@ -134,7 +134,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *testing.T) {
 	now := time.Date(2024, 1, 1, 4, 1, 0, 0, time.UTC)
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		WindowDuration: time.Hour,
 	}
 	ss, _ := state.NewMemoryStoreFromGenericConfig(map[string]any{})
@@ -172,7 +172,7 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 }
 
 func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testing.T) {
-	expectedMetrics := []*metrics.Metric{
+	expectedMetrics := []*latteMetric.Metric{
 		{
 			Name: "test.metric",
 		},
@@ -180,7 +180,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 
 	now := time.Date(2024, 1, 1, 3, 1, 0, 0, time.UTC)
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		Ms:             expectedMetrics,
 		WindowDuration: time.Hour,
 	}

@@ -6,9 +6,9 @@ import (
 	"github.com/google/uuid"
 	latteMetric "github.com/turbolytics/latte/internal/collector/metric"
 	"github.com/turbolytics/latte/internal/collector/partition"
-	"github.com/turbolytics/latte/internal/collector/schedule"
 	"github.com/turbolytics/latte/internal/obs"
-	"github.com/turbolytics/latte/internal/sinks"
+	"github.com/turbolytics/latte/internal/schedule"
+	"github.com/turbolytics/latte/internal/sink"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -23,8 +23,8 @@ var meter = otel.Meter("latte-collector")
 
 type Config interface {
 	CollectorName() string
-	GetSinks() []sinks.Sinker
-	GetSchedule() schedule.Schedule
+	GetSinks() []sink.Sinker
+	GetSchedule() schedule.Config
 }
 
 type Collector interface {

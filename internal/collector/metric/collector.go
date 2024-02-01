@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/turbolytics/latte/internal/collector/source"
-	"github.com/turbolytics/latte/internal/collector/state"
-	"github.com/turbolytics/latte/internal/metrics"
+	latteMetric "github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/obs"
+	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/state"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,7 +26,7 @@ type Collector struct {
 	now    func() time.Time
 }
 
-func (c *Collector) Transform(ms []*metrics.Metric) error {
+func (c *Collector) Transform(ms []*latteMetric.Metric) error {
 	for _, m := range ms {
 		m.Name = c.Config.Metric.Name
 		m.Type = c.Config.Metric.Type
@@ -41,7 +41,7 @@ func (c *Collector) Transform(ms []*metrics.Metric) error {
 	return nil
 }
 
-func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error) {
+func (c *Collector) Source(ctx context.Context) (ms []*latteMetric.Metric, err error) {
 	start := time.Now().UTC()
 
 	histogram, _ := meter.Float64Histogram(
@@ -81,7 +81,7 @@ func (c *Collector) Source(ctx context.Context) (ms []*metrics.Metric, err error
 	return ms, nil
 }
 
-func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
+func (c *Collector) Sink(ctx context.Context, metrics []*latteMetric.Metric) error {
 
 	histogram, _ := meter.Float64Histogram(
 		"collector.sink.duration",
@@ -117,7 +117,7 @@ func (c *Collector) Sink(ctx context.Context, metrics []*metrics.Metric) error {
 	return nil
 }
 
-func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
+func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*latteMetric.Metric, error) {
 	ms, err := c.Source(ctx)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*metrics.Me
 	return ms, err
 }
 
-func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Window) ([]*metrics.Metric, error) {
+func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Window) ([]*latteMetric.Metric, error) {
 	c.logger.Info(
 		"collector.invokeWindow",
 		zap.String("msg", "invoking for window"),
@@ -175,8 +175,8 @@ func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID,
 // invokeWindow uses the state store to check if a full window has elapsed.
 // invokeWindow will only source data when a full window has elapsed.
 // TODO - What happens when a window is changed in the config?
-func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*metrics.Metric, error) {
-	var ms []*metrics.Metric
+func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*latteMetric.Metric, error) {
+	var ms []*latteMetric.Metric
 	var err error
 	// TODO invokeWindow should handle gaps in windows.
 	i, err := c.Config.StateStore.Storer.MostRecentInvocation(

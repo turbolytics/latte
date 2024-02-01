@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/latte/internal/metrics"
+	"github.com/turbolytics/latte/internal/metric"
 	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
@@ -139,7 +139,7 @@ FROM
 		m.Timestamp = time.Time{}
 	}
 
-	assert.Equal(t, []*metrics.Metric{
+	assert.Equal(t, []*metric.Metric{
 		{
 			Window: &start,
 			Value:  8555,

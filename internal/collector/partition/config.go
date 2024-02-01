@@ -1,19 +1,18 @@
 package partition
 
 import (
-	"github.com/turbolytics/latte/internal/collector/schedule"
-	"github.com/turbolytics/latte/internal/collector/sink"
-	"github.com/turbolytics/latte/internal/collector/source"
-	"github.com/turbolytics/latte/internal/collector/state"
-	"github.com/turbolytics/latte/internal/collector/transform"
-	"github.com/turbolytics/latte/internal/sinks"
+	"github.com/turbolytics/latte/internal/schedule"
+	"github.com/turbolytics/latte/internal/sink"
+	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/state"
+	"github.com/turbolytics/latte/internal/transform"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
 	Name       string
-	Schedule   schedule.Schedule
+	Schedule   schedule.Config
 	StateStore state.Config `yaml:"state_store"`
 	Source     source.Config
 	Transform  transform.Config
@@ -28,12 +27,12 @@ func (c Config) CollectorName() string {
 	return c.Name
 }
 
-func (c Config) GetSchedule() schedule.Schedule {
+func (c Config) GetSchedule() schedule.Config {
 	return c.Schedule
 }
 
-func (c Config) GetSinks() []sinks.Sinker {
-	var ss []sinks.Sinker
+func (c Config) GetSinks() []sink.Sinker {
+	var ss []sink.Sinker
 	for _, s := range c.Sinks {
 		ss = append(ss, s.Sinker)
 	}

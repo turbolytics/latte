@@ -3,16 +3,15 @@ package metric
 import (
 	"context"
 	"fmt"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/mongodb"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/postgres"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/prometheus"
-	"github.com/turbolytics/latte/internal/collector/schedule"
-	"github.com/turbolytics/latte/internal/collector/sink"
-	"github.com/turbolytics/latte/internal/collector/source"
-	"github.com/turbolytics/latte/internal/collector/state"
 	"github.com/turbolytics/latte/internal/collector/template"
-	"github.com/turbolytics/latte/internal/metrics"
-	"github.com/turbolytics/latte/internal/sinks"
+	"github.com/turbolytics/latte/internal/metric"
+	"github.com/turbolytics/latte/internal/schedule"
+	"github.com/turbolytics/latte/internal/sink"
+	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/source/metric/mongodb"
+	"github.com/turbolytics/latte/internal/source/metric/postgres"
+	prometheus2 "github.com/turbolytics/latte/internal/source/metric/prometheus"
+	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -28,14 +27,14 @@ type Tag struct {
 
 type Metric struct {
 	Name string
-	Type metrics.Type
+	Type metric.Type
 	Tags []Tag
 }
 
 type Config struct {
 	Name       string
 	Metric     Metric
-	Schedule   schedule.Schedule
+	Schedule   schedule.Config
 	Source     source.Config
 	Sinks      map[string]sink.Config
 	StateStore state.Config `yaml:"state_store"`
@@ -45,12 +44,12 @@ type Config struct {
 	validate bool
 }
 
-func (c Config) GetSchedule() schedule.Schedule {
+func (c Config) GetSchedule() schedule.Config {
 	return c.Schedule
 }
 
-func (c Config) GetSinks() []sinks.Sinker {
-	var ss []sinks.Sinker
+func (c Config) GetSinks() []sink.Sinker {
+	var ss []sink.Sinker
 	for _, s := range c.Sinks {
 		ss = append(ss, s.Sinker)
 	}
@@ -92,9 +91,9 @@ func initSource(c *Config) error {
 			c.validate,
 		)
 	case source.TypePrometheus:
-		s, err = prometheus.NewFromGenericConfig(
+		s, err = prometheus2.NewFromGenericConfig(
 			c.Source.Config,
-			prometheus.WithLogger(c.logger),
+			prometheus2.WithLogger(c.logger),
 		)
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)

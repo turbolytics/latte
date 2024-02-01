@@ -1,4 +1,4 @@
-package sinks
+package sink
 
 type Type string
 
