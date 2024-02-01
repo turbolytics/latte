@@ -3,14 +3,14 @@ package metric
 import (
 	"context"
 	"fmt"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/mongodb"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/postgres"
-	"github.com/turbolytics/latte/internal/collector/metric/sources/prometheus"
 	"github.com/turbolytics/latte/internal/collector/template"
 	"github.com/turbolytics/latte/internal/metrics"
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/source/metric/mongodb"
+	"github.com/turbolytics/latte/internal/source/metric/postgres"
+	prometheus2 "github.com/turbolytics/latte/internal/source/metric/prometheus"
 	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -91,9 +91,9 @@ func initSource(c *Config) error {
 			c.validate,
 		)
 	case source.TypePrometheus:
-		s, err = prometheus.NewFromGenericConfig(
+		s, err = prometheus2.NewFromGenericConfig(
 			c.Source.Config,
-			prometheus.WithLogger(c.logger),
+			prometheus2.WithLogger(c.logger),
 		)
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Source.Type)

@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	_ "github.com/lib/pq"
 	"github.com/mitchellh/mapstructure"
-	scsql "github.com/turbolytics/latte/internal/collector/metric/sources/sql"
 	"github.com/turbolytics/latte/internal/metrics"
+	scsql "github.com/turbolytics/latte/internal/sql"
 	"time"
 )
 

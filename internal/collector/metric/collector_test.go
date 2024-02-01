@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/turbolytics/latte/internal/collector/metric/sources"
 	"github.com/turbolytics/latte/internal/metrics"
 	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/source/metric"
 	state2 "github.com/turbolytics/latte/internal/state"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
@@ -48,7 +48,7 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 		},
 	}
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		Ms: expectedMetrics,
 	}
 
@@ -74,7 +74,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 1, 1, 0, 0, time.UTC)
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		Ms:             expectedMetrics,
 		WindowDuration: time.Minute,
 	}
@@ -134,7 +134,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *testing.T) {
 	now := time.Date(2024, 1, 1, 4, 1, 0, 0, time.UTC)
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		WindowDuration: time.Hour,
 	}
 	ss, _ := state2.NewMemoryStoreFromGenericConfig(map[string]any{})
@@ -180,7 +180,7 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 
 	now := time.Date(2024, 1, 1, 3, 1, 0, 0, time.UTC)
 
-	ts := &sources.TestSourcer{
+	ts := &metric.TestSourcer{
 		Ms:             expectedMetrics,
 		WindowDuration: time.Hour,
 	}
