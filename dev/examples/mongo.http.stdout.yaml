@@ -44,4 +44,5 @@ sinks:
   vector:
     type: http
     config:
+      method: POST
       uri: 'http://{{ getEnvOrDefault "SC_VECTOR_HOST" "127.0.0.1" }}:9999/metrics'

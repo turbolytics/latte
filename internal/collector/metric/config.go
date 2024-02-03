@@ -1,16 +1,12 @@
 package metric
 
 import (
-	"context"
-	"fmt"
 	"github.com/turbolytics/latte/internal/collector/template"
 	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
+	"github.com/turbolytics/latte/internal/sink/type"
 	"github.com/turbolytics/latte/internal/source"
-	"github.com/turbolytics/latte/internal/source/metric/mongodb"
-	"github.com/turbolytics/latte/internal/source/metric/postgres"
-	prometheus2 "github.com/turbolytics/latte/internal/source/metric/prometheus"
 	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -48,8 +44,12 @@ func (c Config) GetSchedule() schedule.Config {
 	return c.Schedule
 }
 
-func (c Config) GetSinks() []sink.Sinker {
-	var ss []sink.Sinker
+func (c Config) GetSource() source.Config {
+	return c.Source
+}
+
+func (c Config) GetSinks() []_type.Sinker {
+	var ss []_type.Sinker
 	for _, s := range c.Sinks {
 		ss = append(ss, s.Sinker)
 	}
@@ -72,39 +72,6 @@ func ConfigWithLogger(l *zap.Logger) ConfigOption {
 	return func(c *Config) {
 		c.logger = l
 	}
-}
-
-// initSource initializes the correct source.
-func initSource(c *Config) error {
-	var s source.MetricSourcer
-	var err error
-	switch c.Source.Type {
-	case source.TypePostgres:
-		s, err = postgres.NewFromGenericConfig(
-			c.Source.Config,
-			c.validate,
-		)
-	case source.TypeMongoDB:
-		s, err = mongodb.NewFromGenericConfig(
-			context.TODO(),
-			c.Source.Config,
-			c.validate,
-		)
-	case source.TypePrometheus:
-		s, err = prometheus2.NewFromGenericConfig(
-			c.Source.Config,
-			prometheus2.WithLogger(c.logger),
-		)
-	default:
-		return fmt.Errorf("source type: %q unknown", c.Source.Type)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	c.Source.MetricSourcer = s
-	return nil
 }
 
 // initSinks initializes all the outputs
@@ -169,7 +136,7 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		return nil, err
 	}
 
-	if err := initSource(&conf); err != nil {
+	if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
 		return nil, err
 	}
 

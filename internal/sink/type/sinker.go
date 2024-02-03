@@ -1,4 +1,4 @@
-package sink
+package _type
 
 type Type string
 
@@ -14,4 +14,5 @@ const (
 type Sinker interface {
 	Write([]byte) (int, error)
 	Close() error
+	Type() Type
 }

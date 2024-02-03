@@ -1,18 +1,8 @@
 package metric
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/google/uuid"
 	latteMetric "github.com/turbolytics/latte/internal/metric"
-	"github.com/turbolytics/latte/internal/obs"
-	"github.com/turbolytics/latte/internal/source"
-	"github.com/turbolytics/latte/internal/state"
-	"github.com/turbolytics/latte/internal/timeseries"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"time"
 )
@@ -41,6 +31,7 @@ func (c *Collector) Transform(ms []*latteMetric.Metric) error {
 	return nil
 }
 
+/*
 func (c *Collector) Source(ctx context.Context) (ms []*latteMetric.Metric, err error) {
 	start := time.Now().UTC()
 
@@ -251,6 +242,8 @@ func (c *Collector) Invoke(ctx context.Context) (err error) {
 
 	return err
 }
+
+*/
 
 type CollectorOption func(*Collector)
 

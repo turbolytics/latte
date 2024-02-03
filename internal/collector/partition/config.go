@@ -3,6 +3,7 @@ package partition
 import (
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
+	"github.com/turbolytics/latte/internal/sink/type"
 	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/state"
 	"github.com/turbolytics/latte/internal/transform"
@@ -31,8 +32,12 @@ func (c Config) GetSchedule() schedule.Config {
 	return c.Schedule
 }
 
-func (c Config) GetSinks() []sink.Sinker {
-	var ss []sink.Sinker
+func (c Config) GetSource() source.Config {
+	return c.Source
+}
+
+func (c Config) GetSinks() []_type.Sinker {
+	var ss []_type.Sinker
 	for _, s := range c.Sinks {
 		ss = append(ss, s.Sinker)
 	}
@@ -124,7 +129,7 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		return nil, err
 	}
 
-	if err := conf.Source.Init(); err != nil {
+	if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
 		return nil, err
 	}
 

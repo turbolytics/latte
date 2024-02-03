@@ -3,6 +3,7 @@ package console
 import (
 	"bufio"
 	"fmt"
+	"github.com/turbolytics/latte/internal/sink/type"
 	"io"
 	"os"
 )
@@ -13,6 +14,10 @@ type Console struct {
 
 func (c *Console) Close() error {
 	return nil
+}
+
+func (c *Console) Type() _type.Type {
+	return _type.TypeConsole
 }
 
 func (c *Console) Write(bs []byte) (int, error) {
