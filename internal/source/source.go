@@ -1,12 +1,7 @@
 package source
 
 import (
-	"context"
 	"fmt"
-	"github.com/turbolytics/latte/internal/record"
-	"github.com/turbolytics/latte/internal/source/metric/mongodb"
-	"go.uber.org/zap"
-	"time"
 )
 
 type Type string
@@ -26,20 +21,10 @@ const (
 	TypeStrategyTick                   TypeStrategy = "tick"
 )
 
-type Sourcer interface {
-	Source(ctx context.Context) (record.Result, error)
-	Window() *time.Duration
-}
-
 type Config struct {
 	Strategy TypeStrategy
 	Config   map[string]any
 	Type     Type
-	Sourcer  Sourcer
-}
-
-func (c Config) Window() *time.Duration {
-	return c.Sourcer.Window()
 }
 
 func (c Config) Validate() error {
@@ -61,11 +46,11 @@ func (c *Config) SetDefaults() {
 	}
 }
 
+/*
 func (c *Config) Init(l *zap.Logger, validate bool) error {
 	var err error
 	var s Sourcer
 	switch c.Type {
-	/*
 			case TypePartitionS3:
 				s, err = s3.NewFromGenericConfig(
 					c.Config,
@@ -76,20 +61,17 @@ func (c *Config) Init(l *zap.Logger, validate bool) error {
 				c.Config,
 				validate,
 			)
-	*/
 	case TypeMongoDB:
 		s, err = mongodb.NewFromGenericConfig(
 			context.TODO(),
 			c.Config,
 			validate,
 		)
-		/*
 			case TypePrometheus:
 				s, err = prometheus.NewFromGenericConfig(
 					c.Config,
 					prometheus.WithLogger(l),
 				)
-		*/
 	default:
 		return fmt.Errorf("source type: %q unknown", c.Type)
 	}
@@ -100,3 +82,4 @@ func (c *Config) Init(l *zap.Logger, validate bool) error {
 	c.Sourcer = s
 	return nil
 }
+*/

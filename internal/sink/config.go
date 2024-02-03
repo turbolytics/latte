@@ -1,35 +1,26 @@
 package sink
 
-import (
-	"github.com/turbolytics/latte/internal/sink/console"
-	"github.com/turbolytics/latte/internal/sink/file"
-	"github.com/turbolytics/latte/internal/sink/http"
-	"github.com/turbolytics/latte/internal/sink/kafka"
-	"github.com/turbolytics/latte/internal/sink/type"
-	"go.uber.org/zap"
-)
-
 type Config struct {
-	Type   _type.Type
-	Sinker _type.Sinker
+	Type   Type
 	Config map[string]any
 }
 
+/*
 func (c *Config) Init(validate bool, logger *zap.Logger) error {
 	var sink _type.Sinker
 	var err error
 
 	switch c.Type {
-	case _type.TypeConsole:
+	case TypeConsole:
 		sink, err = console.NewFromGenericConfig(c.Config)
-	case _type.TypeKafka:
+	case TypeKafka:
 		sink, err = kafka.NewFromGenericConfig(c.Config)
-	case _type.TypeHTTP:
+	case TypeHTTP:
 		sink, err = http.NewFromGenericConfig(
 			c.Config,
 			http.WithLogger(logger),
 		)
-	case _type.TypeFile:
+	case TypeFile:
 		sink, err = file.NewFromGenericConfig(
 			c.Config,
 			validate,
@@ -42,5 +33,5 @@ func (c *Config) Init(validate bool, logger *zap.Logger) error {
 
 	c.Sinker = sink
 	return nil
-
 }
+*/

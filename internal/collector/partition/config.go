@@ -3,7 +3,6 @@ package partition
 import (
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
-	"github.com/turbolytics/latte/internal/sink/type"
 	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/state"
 	"github.com/turbolytics/latte/internal/transform"
@@ -36,6 +35,7 @@ func (c Config) GetSource() source.Config {
 	return c.Source
 }
 
+/*
 func (c Config) GetSinks() []_type.Sinker {
 	var ss []_type.Sinker
 	for _, s := range c.Sinks {
@@ -43,6 +43,8 @@ func (c Config) GetSinks() []_type.Sinker {
 	}
 	return ss
 }
+
+*/
 
 type ConfigOption func(*Config)
 
@@ -83,6 +85,7 @@ func validate(c Config) error {
 	return nil
 }
 
+/*
 func initSinks(c *Config) error {
 	for k, v := range c.Sinks {
 		if err := v.Init(c.validate, c.logger); err != nil {
@@ -92,6 +95,7 @@ func initSinks(c *Config) error {
 	}
 	return nil
 }
+*/
 
 // NewConfig initializes a config from yaml bytes.
 // NewConfig initializes all subtypes as well.
@@ -121,25 +125,31 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		return nil, err
 	}
 
-	if err := validate(conf); err != nil {
-		return nil, err
-	}
+	/*
+		if err := validate(conf); err != nil {
+			return nil, err
+		}
+	*/
 
 	if err := conf.StateStore.Init(); err != nil {
 		return nil, err
 	}
 
-	if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
-		return nil, err
-	}
+	/*
+		if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
+			return nil, err
+		}
 
+	*/
 	if err := conf.Transform.Init(); err != nil {
 		return nil, err
 	}
 
-	if err := initSinks(&conf); err != nil {
-		return nil, err
-	}
+	/*
+		if err := initSinks(&conf); err != nil {
+			return nil, err
+		}
+	*/
 
 	return &conf, nil
 }

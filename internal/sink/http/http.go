@@ -3,7 +3,7 @@ package http
 import (
 	"bytes"
 	"github.com/mitchellh/mapstructure"
-	"github.com/turbolytics/latte/internal/sink/type"
+	"github.com/turbolytics/latte/internal/sink"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -33,8 +33,8 @@ func (h *HTTP) Close() error {
 	return nil
 }
 
-func (h *HTTP) Type() _type.Type {
-	return _type.TypeHTTP
+func (h *HTTP) Type() sink.Type {
+	return sink.TypeHTTP
 }
 
 func (h *HTTP) Write(bs []byte) (int, error) {

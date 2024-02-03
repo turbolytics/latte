@@ -24,6 +24,7 @@ func TestNewConfigFromFile(t *testing.T) {
 		{"postgres.kafka.stdout.yaml"},
 		{"postgres.fileaudit.stdout.yaml"},
 		{"prometheus.stdout.yaml"},
+		{"s3.http.clickhouse.yaml"},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.fileName, func(t *testing.T) {
@@ -44,5 +45,5 @@ func TestNewConfigsFromGlob(t *testing.T) {
 		WithJustValidation(true),
 	)
 	assert.NoError(t, err)
-	assert.Equal(t, 6, len(cs))
+	assert.Equal(t, 7, len(cs))
 }

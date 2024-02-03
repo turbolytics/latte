@@ -2,7 +2,7 @@ package file
 
 import (
 	"github.com/mitchellh/mapstructure"
-	"github.com/turbolytics/latte/internal/sink/type"
+	"github.com/turbolytics/latte/internal/sink"
 	"os"
 )
 
@@ -19,8 +19,8 @@ func (fs *File) Close() error {
 	return fs.f.Close()
 }
 
-func (fs *File) Type() _type.Type {
-	return _type.TypeHTTP
+func (fs *File) Type() sink.Type {
+	return sink.TypeHTTP
 }
 
 func (fs *File) Write(bs []byte) (int, error) {

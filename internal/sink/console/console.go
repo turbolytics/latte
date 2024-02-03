@@ -3,7 +3,7 @@ package console
 import (
 	"bufio"
 	"fmt"
-	"github.com/turbolytics/latte/internal/sink/type"
+	"github.com/turbolytics/latte/internal/sink"
 	"io"
 	"os"
 )
@@ -16,8 +16,8 @@ func (c *Console) Close() error {
 	return nil
 }
 
-func (c *Console) Type() _type.Type {
-	return _type.TypeConsole
+func (c *Console) Type() sink.Type {
+	return sink.TypeConsole
 }
 
 func (c *Console) Write(bs []byte) (int, error) {

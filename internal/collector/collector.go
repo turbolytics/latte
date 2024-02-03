@@ -4,12 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
-	latteMetric "github.com/turbolytics/latte/internal/collector/metric"
-	"github.com/turbolytics/latte/internal/collector/partition"
 	"github.com/turbolytics/latte/internal/obs"
 	"github.com/turbolytics/latte/internal/record"
-	"github.com/turbolytics/latte/internal/schedule"
-	"github.com/turbolytics/latte/internal/sink/type"
 	"github.com/turbolytics/latte/internal/source"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -23,11 +19,31 @@ import (
 
 var meter = otel.Meter("latte-collector")
 
+type Sourcer interface {
+	Source(ctx context.Context) (record.Result, error)
+	Window() *time.Duration
+	Type() source.Type
+	Strategy() source.TypeStrategy
+}
+
+// Sinker is responsible for sinking
+// TODO - Starting with an io.Writer for right now.
+type Sinker interface {
+	Write([]byte) (int, error)
+	Close() error
+	Type() Type
+}
+
+type Schedule interface {
+	Interval() *time.Duration
+	Cron() *string
+}
+
 type Config interface {
 	CollectorName() string
-	GetSinks() []_type.Sinker
-	GetSchedule() schedule.Config
-	GetSource() source.Config
+	Sinks() []Sinker
+	Schedule() Schedule
+	Sourcer() Sourcer
 }
 
 type Invoker struct {
@@ -38,7 +54,7 @@ type Invoker struct {
 }
 
 func (i *Invoker) Close() error {
-	ss := i.Config.GetSinks()
+	ss := i.Config.Sinks()
 	for _, s := range ss {
 		s.Close()
 	}
@@ -62,7 +78,7 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 		metric.WithUnit("s"),
 	)
 
-	s := i.Config.GetSource()
+	s := i.Config.Sourcer()
 
 	defer func() {
 		duration := time.Since(start)
@@ -70,7 +86,7 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
 			attribute.NewSet(
 				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("source.type", string(s.Type)),
+				attribute.String("source.type", string(s.Type())),
 			),
 		))
 
@@ -79,7 +95,7 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 			metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
 				o.Observe(int64(len(sr.Records())), metric.WithAttributeSet(
 					attribute.NewSet(
-						attribute.String("source.type", string(s.Type)),
+						attribute.String("source.type", string(s.Type())),
 					),
 				))
 				return nil
@@ -87,10 +103,10 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 		)
 	}()
 
-	sr, err = s.Sourcer.Source(ctx)
+	sr, err = s.Source(ctx)
 
 	i.logger.Debug("collector.Source",
-		zap.String("source.strategy", string(i.Config.GetSource().Strategy)),
+		zap.String("source.strategy", string(s.Strategy())),
 		zap.String("id", id.String()),
 		zap.String("name", i.Config.CollectorName()),
 		zap.Int("results.count", len(sr.Records())),
@@ -143,7 +159,7 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 	// add tags from config
 	rs := res.Records()
 
-	sinks := i.Config.GetSinks()
+	sinks := i.Config.Sinks()
 
 	// need to add a serializer
 	for _, r := range rs {
@@ -211,14 +227,14 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 	)
 	ctx = context.WithValue(ctx, "id", id)
 
-	s := i.Config.GetSource()
-	switch s.Strategy {
+	s := i.Config.Sourcer()
+	switch s.Strategy() {
 	case source.TypeStrategyHistoricTumblingWindow:
 		fmt.Println("tumbling window")
 	case source.TypeStrategyTick:
 		i.invokeTick(ctx)
 	default:
-		return fmt.Errorf("strategy: %q not supported", s.Strategy)
+		return fmt.Errorf("strategy: %q not supported", s.Strategy())
 	}
 
 	return nil
@@ -267,17 +283,21 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 
 	switch conf.Collector.Type {
 	case TypeMetric:
-		collConfig, err = latteMetric.NewConfig(
-			bs,
-			latteMetric.ConfigWithJustValidation(conf.validate),
-			latteMetric.ConfigWithLogger(conf.logger),
-		)
+		/*
+			collConfig, err = latteMetric.NewConfig(
+				bs,
+				latteMetric.ConfigWithJustValidation(conf.validate),
+				latteMetric.ConfigWithLogger(conf.logger),
+			)
+		*/
 	case TypePartition:
-		collConfig, err = partition.NewConfig(
-			bs,
-			partition.ConfigWithJustValidation(conf.validate),
-			partition.ConfigWithLogger(conf.logger),
-		)
+		/*
+			collConfig, err = partition.NewConfig(
+				bs,
+				partition.ConfigWithJustValidation(conf.validate),
+				partition.ConfigWithLogger(conf.logger),
+			)
+		*/
 	default:
 		return nil, fmt.Errorf("collector type: %v not supported", conf.Collector.Type)
 	}
