@@ -48,7 +48,7 @@ func (c Config) GetSource() source.Config {
 }
 
 /*
-func (c Config) GetSinks() []_type.Sinker {
+func (c Collector) GetSinks() []_type.Sinker {
 	var ss []_type.Sinker
 	for _, s := range c.Sinks {
 		ss = append(ss, s.Sinker)
@@ -77,7 +77,7 @@ func ConfigWithLogger(l *zap.Logger) ConfigOption {
 
 /*
 // initSinks initializes all the outputs
-func initSinks(c *Config) error {
+func initSinks(c *Collector) error {
 	for k, v := range c.Sinks {
 		if err := v.Init(c.validate, c.logger); err != nil {
 			return err

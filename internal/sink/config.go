@@ -6,23 +6,23 @@ type Config struct {
 }
 
 /*
-func (c *Config) Init(validate bool, logger *zap.Logger) error {
+func (c *Collector) Init(validate bool, logger *zap.Logger) error {
 	var sink _type.Sinker
 	var err error
 
 	switch c.Type {
 	case TypeConsole:
-		sink, err = console.NewFromGenericConfig(c.Config)
+		sink, err = console.NewFromGenericConfig(c.Collector)
 	case TypeKafka:
-		sink, err = kafka.NewFromGenericConfig(c.Config)
+		sink, err = kafka.NewFromGenericConfig(c.Collector)
 	case TypeHTTP:
 		sink, err = http.NewFromGenericConfig(
-			c.Config,
+			c.Collector,
 			http.WithLogger(logger),
 		)
 	case TypeFile:
 		sink, err = file.NewFromGenericConfig(
-			c.Config,
+			c.Collector,
 			validate,
 		)
 	}

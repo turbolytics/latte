@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/spf13/cobra"
 	"github.com/turbolytics/latte/internal/collector"
+	"github.com/turbolytics/latte/internal/invoker"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +23,7 @@ func NewInvokeCmd() *cobra.Command {
 
 			ctx := context.Background()
 
-			c, err := collector.NewFromFile(
+			c, err := invoker.NewFromFile(
 				configPath,
 				collector.WithJustValidation(false),
 				collector.RootWithLogger(logger),

@@ -1,8 +1,50 @@
-package collector
+package invoker
+
+import (
+	"context"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+	"testing"
+)
+
+func TestInvoker_Invoke_UnknownStrategy(t *testing.T) {
+	i := &Invoker{
+		logger:    zap.NewNop(),
+		Collector: TestConfig{},
+	}
+	err := i.Invoke(context.Background())
+	assert.EqualError(t, err, "strategy: \"\" not supported")
+}
+
+func TestInvoker_Invoke_Tick_Success(t *testing.T) {
+	sink := &TestSink{}
+	i := &Invoker{
+		logger: zap.NewNop(),
+		Collector: TestConfig{
+			invocationStrategy: TypeStrategyTick,
+			sinks:              []*TestSink{sink},
+			sourcer: TestSourcer{
+				tr: TestResult{
+					records: []*TestRecord{
+						{
+							bs: []byte("record"),
+						},
+					},
+				},
+			},
+		},
+	}
+	err := i.Invoke(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t,
+		[]string{"record_transformed"},
+		sink.writes,
+	)
+}
 
 /*
 func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
-	coll, err := NewCollector(&Config{
+	coll, err := NewCollector(&Collector{
 		Metric: Metric{
 			Tags: []Tag{
 				{"key1", "val1"},
@@ -39,8 +81,8 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 	}
 
 	coll := &Collector{
-		Config: &Config{
-			Source: source.Config{
+		Collector: &Collector{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyTick,
 			},
@@ -71,12 +113,12 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		now: func() time.Time {
 			return now
 		},
-		Config: &Config{
+		Collector: &Collector{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state.Collector{
 				Storer: ss,
 			},
-			Source: source.Config{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -103,7 +145,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 
 	i, err := ss.MostRecentInvocation(
 		context.Background(),
-		coll.Config.Name,
+		coll.Collector.Name,
 	)
 
 	assert.NoError(t, err)
@@ -137,12 +179,12 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		now: func() time.Time {
 			return now
 		},
-		Config: &Config{
+		Collector: &Collector{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state.Collector{
 				Storer: ss,
 			},
-			Source: source.Config{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -185,12 +227,12 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		now: func() time.Time {
 			return now
 		},
-		Config: &Config{
+		Collector: &Collector{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state.Collector{
 				Storer: ss,
 			},
-			Source: source.Config{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -234,8 +276,8 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 func TestCollector_Close(t *testing.T) {
 	ts := &metric.TestSink{}
 	coll := &Invoker{
-		Config: metric.Config{
-			Sinks: map[string]sink.Config{
+		Collector: metric.Collector{
+			Sinks: map[string]sink.Collector{
 				"sink1": {
 					Sinker: ts,
 				},

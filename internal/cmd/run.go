@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/spf13/cobra"
 	"github.com/turbolytics/latte/internal/collector"
+	"github.com/turbolytics/latte/internal/invoker"
 	"github.com/turbolytics/latte/internal/obs"
 	"github.com/turbolytics/latte/internal/service"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -59,7 +60,7 @@ func NewRunCmd() *cobra.Command {
 			)
 
 			// initialize all collectors in the path
-			is, err := collector.NewFromGlob(
+			is, err := invoker.NewFromGlob(
 				configsGlob,
 				collector.RootWithLogger(logger),
 			)

@@ -1,4 +1,4 @@
-package collector
+package invoker
 
 import (
 	"context"
@@ -6,24 +6,29 @@ import (
 	"github.com/google/uuid"
 	"github.com/turbolytics/latte/internal/obs"
 	"github.com/turbolytics/latte/internal/record"
+	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
-	"os"
-	"path/filepath"
 	"time"
 )
 
 var meter = otel.Meter("latte-collector")
 
+type TypeStrategy string
+
+const (
+	TypeStrategyHistoricTumblingWindow TypeStrategy = "historic_tumbling_window"
+	TypeStrategyIncremental            TypeStrategy = "incremental"
+	TypeStrategyTick                   TypeStrategy = "tick"
+)
+
 type Sourcer interface {
 	Source(ctx context.Context) (record.Result, error)
 	Window() *time.Duration
 	Type() source.Type
-	Strategy() source.TypeStrategy
 }
 
 // Sinker is responsible for sinking
@@ -31,7 +36,7 @@ type Sourcer interface {
 type Sinker interface {
 	Write([]byte) (int, error)
 	Close() error
-	Type() Type
+	Type() sink.Type
 }
 
 type Schedule interface {
@@ -39,22 +44,28 @@ type Schedule interface {
 	Cron() *string
 }
 
-type Config interface {
-	CollectorName() string
+type Transformer interface {
+	Transform(record.Result) error
+}
+
+type Collector interface {
+	Name() string
+	InvocationStrategy() TypeStrategy
 	Sinks() []Sinker
 	Schedule() Schedule
 	Sourcer() Sourcer
+	Transformer() Transformer
 }
 
 type Invoker struct {
-	Config Config
+	Collector Collector
 
 	logger *zap.Logger
 	now    func() time.Time
 }
 
 func (i *Invoker) Close() error {
-	ss := i.Config.Sinks()
+	ss := i.Collector.Sinks()
 	for _, s := range ss {
 		s.Close()
 	}
@@ -78,7 +89,7 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 		metric.WithUnit("s"),
 	)
 
-	s := i.Config.Sourcer()
+	s := i.Collector.Sourcer()
 
 	defer func() {
 		duration := time.Since(start)
@@ -106,9 +117,9 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 	sr, err = s.Source(ctx)
 
 	i.logger.Debug("collector.Source",
-		zap.String("source.strategy", string(s.Strategy())),
+		zap.String("collector.invocation_strategy", string(i.Collector.InvocationStrategy())),
 		zap.String("id", id.String()),
-		zap.String("name", i.Config.CollectorName()),
+		zap.String("name", i.Collector.Name()),
 		zap.Int("results.count", len(sr.Records())),
 	)
 	return sr, err
@@ -119,7 +130,7 @@ func (i *Invoker) invokeTick(ctx context.Context) error {
 
 	i.logger.Debug("collector.invokeTick",
 		zap.String("id", id.String()),
-		zap.String("name", i.Config.CollectorName()),
+		zap.String("name", i.Collector.Name()),
 	)
 
 	sr, err := i.Source(ctx)
@@ -132,16 +143,15 @@ func (i *Invoker) invokeTick(ctx context.Context) error {
 			"collector.Invoke",
 			zap.String("msg", "no results found"),
 			zap.String("id", id.String()),
-			zap.String("name", i.Config.CollectorName()),
+			zap.String("name", i.Collector.Name()),
 		)
 	}
 
 	// how to get additional context to transform function?
-	/*
-		if err := sr.Transform(); err != nil {
-			return err
-		}
-	*/
+	tr := i.Collector.Transformer()
+	if err := tr.Transform(sr); err != nil {
+		return err
+	}
 
 	if err = i.Sink(ctx, sr); err != nil {
 		return err
@@ -159,7 +169,7 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 	// add tags from config
 	rs := res.Records()
 
-	sinks := i.Config.Sinks()
+	sinks := i.Collector.Sinks()
 
 	// need to add a serializer
 	for _, r := range rs {
@@ -207,14 +217,14 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 		counter.Add(ctx, 1, metric.WithAttributeSet(
 			attribute.NewSet(
 				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("collector.name", i.Config.CollectorName()),
+				attribute.String("collector.name", i.Collector.Name()),
 			),
 		))
 
 		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
 			attribute.NewSet(
 				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("collector.name", i.Config.CollectorName()),
+				attribute.String("collector.name", i.Collector.Name()),
 			),
 		))
 	}()
@@ -223,24 +233,25 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 	i.logger.Info(
 		"collector.Invoke",
 		zap.String("id", id.String()),
-		zap.String("name", i.Config.CollectorName()),
+		zap.String("name", i.Collector.Name()),
 	)
 	ctx = context.WithValue(ctx, "id", id)
 
-	s := i.Config.Sourcer()
-	switch s.Strategy() {
-	case source.TypeStrategyHistoricTumblingWindow:
+	strat := i.Collector.InvocationStrategy()
+	switch strat {
+	case TypeStrategyHistoricTumblingWindow:
 		fmt.Println("tumbling window")
-	case source.TypeStrategyTick:
+	case TypeStrategyTick:
 		i.invokeTick(ctx)
 	default:
-		return fmt.Errorf("strategy: %q not supported", s.Strategy())
+		return fmt.Errorf("strategy: %q not supported", strat)
 	}
 
 	return nil
 }
 
-func NewFromGlob(glob string, opts ...RootOption) ([]*Invoker, error) {
+/*
+func NewFromGlob(glob string, opts ...collector.RootOption) ([]*Invoker, error) {
 	files, err := filepath.Glob(glob)
 	if err != nil {
 		return nil, err
@@ -257,7 +268,7 @@ func NewFromGlob(glob string, opts ...RootOption) ([]*Invoker, error) {
 	return invokers, nil
 }
 
-func NewFromFile(fpath string, opts ...RootOption) (*Invoker, error) {
+func NewFromFile(fpath string, opts ...collector.RootOption) (*Invoker, error) {
 	fmt.Printf("loading config from file: %q\n", fpath)
 
 	bs, err := os.ReadFile(fpath)
@@ -267,8 +278,8 @@ func NewFromFile(fpath string, opts ...RootOption) (*Invoker, error) {
 	return New(bs, opts...)
 }
 
-func New(bs []byte, opts ...RootOption) (*Invoker, error) {
-	var conf RootConfig
+func New(bs []byte, opts ...collector.RootOption) (*Invoker, error) {
+	var conf collector.RootConfig
 
 	for _, opt := range opts {
 		opt(&conf)
@@ -278,26 +289,22 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 		return nil, err
 	}
 
-	var collConfig Config
+	var collConfig Collector
 	var err error
 
 	switch conf.Collector.Type {
-	case TypeMetric:
-		/*
+	case collector.TypeMetric:
 			collConfig, err = latteMetric.NewConfig(
 				bs,
 				latteMetric.ConfigWithJustValidation(conf.validate),
 				latteMetric.ConfigWithLogger(conf.logger),
 			)
-		*/
-	case TypePartition:
-		/*
+	case collector.TypePartition:
 			collConfig, err = partition.NewConfig(
 				bs,
 				partition.ConfigWithJustValidation(conf.validate),
 				partition.ConfigWithLogger(conf.logger),
 			)
-		*/
 	default:
 		return nil, fmt.Errorf("collector type: %v not supported", conf.Collector.Type)
 	}
@@ -307,9 +314,10 @@ func New(bs []byte, opts ...RootOption) (*Invoker, error) {
 	}
 
 	i := &Invoker{
-		Config: collConfig,
+		Collector: collConfig,
 
 		logger: conf.logger,
 	}
 	return i, err
 }
+*/
