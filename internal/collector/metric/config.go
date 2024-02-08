@@ -2,6 +2,7 @@ package metric
 
 import (
 	"github.com/turbolytics/latte/internal/collector/template"
+	"github.com/turbolytics/latte/internal/invoker"
 	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
@@ -26,7 +27,7 @@ type Metric struct {
 	Tags []Tag
 }
 
-type Config struct {
+type config struct {
 	Name       string
 	Metric     Metric
 	Schedule   schedule.Config
@@ -39,11 +40,11 @@ type Config struct {
 	validate bool
 }
 
-func (c Config) GetSchedule() schedule.Config {
+func (c config) GetSchedule() schedule.Config {
 	return c.Schedule
 }
 
-func (c Config) GetSource() source.Config {
+func (c config) GetSource() source.Config {
 	return c.Source
 }
 
@@ -57,22 +58,8 @@ func (c Collector) GetSinks() []_type.Sinker {
 }
 */
 
-func (c Config) CollectorName() string {
+func (c config) CollectorName() string {
 	return c.Name
-}
-
-type ConfigOption func(*Config)
-
-func ConfigWithJustValidation(validate bool) ConfigOption {
-	return func(c *Config) {
-		c.validate = validate
-	}
-}
-
-func ConfigWithLogger(l *zap.Logger) ConfigOption {
-	return func(c *Config) {
-		c.logger = l
-	}
 }
 
 /*
@@ -88,13 +75,13 @@ func initSinks(c *Collector) error {
 }
 */
 
-func defaults(c *Config) error {
+func defaults(c *config) error {
 	(&c.Source).SetDefaults()
 
 	return nil
 }
 
-func validate(c Config) error {
+func validate(c config) error {
 	validaters := []validater{
 		c.Schedule,
 		c.Source,
@@ -111,12 +98,14 @@ func validate(c Config) error {
 
 // NewConfig initializes a config from yaml bytes.
 // NewConfig initializes all subtypes as well.
-func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
-	var conf Config
+func NewConfig(raw []byte) (*config, error) {
+	var conf config
 
-	for _, opt := range opts {
-		opt(&conf)
-	}
+	/*
+		for _, opt := range opts {
+			opt(&conf)
+		}
+	*/
 
 	bs, err := template.Parse(raw)
 	if err != nil {
@@ -135,19 +124,83 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		return nil, err
 	}
 
-	if err := conf.StateStore.Init(); err != nil {
-		return nil, err
-	}
-
 	/*
-		if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
+		if err := conf.StateStore.Init(); err != nil {
 			return nil, err
 		}
 
-		if err := initSinks(&conf); err != nil {
-			return nil, err
-		}
+			if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
+				return nil, err
+			}
+
+			if err := initSinks(&conf); err != nil {
+				return nil, err
+			}
 
 	*/
 	return &conf, nil
+}
+
+type Collector struct {
+	config   *config
+	logger   *zap.Logger
+	validate bool
+}
+
+func (c *Collector) Name() string {
+	return ""
+}
+
+func (c *Collector) InvocationStrategy() invoker.TypeStrategy {
+	return invoker.TypeStrategyTick
+}
+
+func (c *Collector) Sinks() []invoker.Sinker {
+	return nil
+}
+
+func (c *Collector) Schedule() invoker.Schedule {
+	return nil
+}
+
+func (c *Collector) Sourcer() invoker.Sourcer {
+	return nil
+}
+
+func (c *Collector) Storer() state.Storer {
+	return nil
+}
+
+func (c *Collector) Transformer() invoker.Transformer {
+	return nil
+}
+
+type Option func(*Collector)
+
+func WithJustValidation(validate bool) Option {
+	return func(c *Collector) {
+		c.validate = validate
+	}
+}
+
+func WithLogger(l *zap.Logger) Option {
+	return func(c *Collector) {
+		c.logger = l
+	}
+}
+func NewCollectorFromConfig(bs []byte, opts ...Option) (*Collector, error) {
+	conf, err := NewConfig(bs)
+	if err != nil {
+		return nil, err
+	}
+
+	collector := &Collector{
+		config: conf,
+	}
+
+	for _, opt := range opts {
+		opt(collector)
+	}
+
+	return collector, nil
 }

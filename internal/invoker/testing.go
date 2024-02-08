@@ -5,6 +5,7 @@ import (
 	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/state"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func (tr TestResult) Records() []record.Record {
 }
 
 type TestSink struct {
-	Closes int
+	closes int
 	writes []string
 }
 
@@ -55,7 +56,7 @@ func (ts *TestSink) Write(bs []byte) (int, error) {
 }
 
 func (ts *TestSink) Close() error {
-	ts.Closes++
+	ts.closes++
 	return nil
 }
 
@@ -111,4 +112,8 @@ func (t TestConfig) Schedule() Schedule {
 
 func (t TestConfig) Sourcer() Sourcer {
 	return t.sourcer
+}
+
+func (t TestConfig) Storer() state.Storer {
+	return nil
 }

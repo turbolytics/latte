@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/turbolytics/latte/internal/collector"
-	"github.com/turbolytics/latte/internal/invoker"
 )
 
 func NewValidateCmd() *cobra.Command {
@@ -16,7 +15,7 @@ func NewValidateCmd() *cobra.Command {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(configPath)
-			_, err := invoker.NewFromFile(
+			_, err := collector.NewFromFile(
 				configPath,
 				collector.WithJustValidation(true),
 			)

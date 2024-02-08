@@ -16,6 +16,19 @@ func TestInvoker_Invoke_UnknownStrategy(t *testing.T) {
 	assert.EqualError(t, err, "strategy: \"\" not supported")
 }
 
+func TestCollector_Close(t *testing.T) {
+	sink := &TestSink{}
+	i := &Invoker{
+		logger: zap.NewNop(),
+		Collector: TestConfig{
+			sinks: []*TestSink{sink},
+		},
+	}
+	err := i.Close()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, sink.closes)
+}
+
 func TestInvoker_Invoke_Tick_Success(t *testing.T) {
 	sink := &TestSink{}
 	i := &Invoker{
@@ -271,24 +284,5 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 			End:   time.Date(2024, 1, 1, 3, 0, 0, 0, time.UTC),
 		},
 	}, i)
-}
-
-func TestCollector_Close(t *testing.T) {
-	ts := &metric.TestSink{}
-	coll := &Invoker{
-		Collector: metric.Collector{
-			Sinks: map[string]sink.Collector{
-				"sink1": {
-					Sinker: ts,
-				},
-				"sink2": {
-					Sinker: ts,
-				},
-			},
-		},
-	}
-	err := coll.Close()
-	assert.NoError(t, err)
-	assert.Equal(t, 2, ts.Closes)
 }
 */

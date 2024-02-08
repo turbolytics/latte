@@ -8,6 +8,8 @@ import (
 	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/state"
+	"github.com/turbolytics/latte/internal/timeseries"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -54,7 +56,16 @@ type Collector interface {
 	Sinks() []Sinker
 	Schedule() Schedule
 	Sourcer() Sourcer
+	Storer() state.Storer
 	Transformer() Transformer
+}
+
+type Option func(*Invoker)
+
+func WithLogger(l *zap.Logger) Option {
+	return func(i *Invoker) {
+		i.logger = l
+	}
 }
 
 type Invoker struct {
@@ -160,6 +171,74 @@ func (i *Invoker) invokeTick(ctx context.Context) error {
 	return nil
 }
 
+func (i *Invoker) invokeHistoricTumblingWindowSourceAndSave(ctx context.Context, window timeseries.Window) error {
+	id := ctx.Value("id").(uuid.UUID)
+
+	i.logger.Info(
+		"collector.invokeHistoricTumblingWindowSourceAndSave",
+		zap.String("msg", "invoking for window"),
+		zap.String("window.start", window.Start.String()),
+		zap.String("window.end", window.End.String()),
+		zap.String("id", id.String()),
+		zap.String("name", i.Collector.Name()),
+	)
+
+	return nil
+}
+
+func (i *Invoker) invokeHistoricTumblingWindow(ctx context.Context) error {
+	id := ctx.Value("id").(uuid.UUID)
+	i.logger.Debug("collector.invokeHistoricTumblingWindow",
+		zap.String("id", id.String()),
+		zap.String("name", i.Collector.Name()),
+	)
+
+	storer := i.Collector.Storer()
+	inv, err := storer.MostRecentInvocation(ctx, i.Collector.Name())
+	if err != nil {
+		return err
+	}
+
+	var lastWindowEnd *time.Time
+	if i != nil {
+		lastWindowEnd = inv.End()
+	}
+
+	hw := timeseries.NewHistoricTumblingWindower(
+		timeseries.WithHistoricTumblingWindowerNow(i.now),
+	)
+	s := i.Collector.Sourcer()
+	windows, err := hw.FullWindowsSince(
+		lastWindowEnd,
+		*(s.Window()),
+	)
+	if err != nil {
+		return err
+	}
+
+	switch len(windows) {
+	case 0:
+		// no full windows have passed, just return
+		return nil
+	case 1:
+		// a single window is available, collect it
+		// sr, err = i.invokeWindowSourceAndSave(ctx, id, windows[0])
+	default:
+		// multiple windows have been found, currently
+		// not supported
+		i.logger.Error(
+			"collector.invokeHistoricTumblingWindow",
+			zap.String("msg", "multiple windows detected"),
+			zap.Int("windows", len(windows)),
+			zap.String("id", id.String()),
+			zap.String("name", i.Collector.Name()),
+		)
+		return fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
+	}
+
+	return nil
+}
+
 func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 
 	histogram, _ := meter.Float64Histogram(
@@ -240,9 +319,9 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 	strat := i.Collector.InvocationStrategy()
 	switch strat {
 	case TypeStrategyHistoricTumblingWindow:
-		fmt.Println("tumbling window")
+		return i.invokeHistoricTumblingWindow(ctx)
 	case TypeStrategyTick:
-		i.invokeTick(ctx)
+		return i.invokeTick(ctx)
 	default:
 		return fmt.Errorf("strategy: %q not supported", strat)
 	}
@@ -250,74 +329,14 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 	return nil
 }
 
-/*
-func NewFromGlob(glob string, opts ...collector.RootOption) ([]*Invoker, error) {
-	files, err := filepath.Glob(glob)
-	if err != nil {
-		return nil, err
+func New(collector Collector, opts ...Option) (*Invoker, error) {
+	i := &Invoker{
+		Collector: collector,
 	}
-	var invokers []*Invoker
-
-	for _, fName := range files {
-		c, err := NewFromFile(fName, opts...)
-		if err != nil {
-			return nil, err
-		}
-		invokers = append(invokers, c)
-	}
-	return invokers, nil
-}
-
-func NewFromFile(fpath string, opts ...collector.RootOption) (*Invoker, error) {
-	fmt.Printf("loading config from file: %q\n", fpath)
-
-	bs, err := os.ReadFile(fpath)
-	if err != nil {
-		return nil, err
-	}
-	return New(bs, opts...)
-}
-
-func New(bs []byte, opts ...collector.RootOption) (*Invoker, error) {
-	var conf collector.RootConfig
 
 	for _, opt := range opts {
-		opt(&conf)
+		opt(i)
 	}
 
-	if err := yaml.Unmarshal(bs, &conf); err != nil {
-		return nil, err
-	}
-
-	var collConfig Collector
-	var err error
-
-	switch conf.Collector.Type {
-	case collector.TypeMetric:
-			collConfig, err = latteMetric.NewConfig(
-				bs,
-				latteMetric.ConfigWithJustValidation(conf.validate),
-				latteMetric.ConfigWithLogger(conf.logger),
-			)
-	case collector.TypePartition:
-			collConfig, err = partition.NewConfig(
-				bs,
-				partition.ConfigWithJustValidation(conf.validate),
-				partition.ConfigWithLogger(conf.logger),
-			)
-	default:
-		return nil, fmt.Errorf("collector type: %v not supported", conf.Collector.Type)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	i := &Invoker{
-		Collector: collConfig,
-
-		logger: conf.logger,
-	}
-	return i, err
+	return i, nil
 }
-*/

@@ -32,16 +32,16 @@ func (s *Service) Run(ctx context.Context) error {
 
 	for _, i := range s.invokers {
 		iCopy := i
-		sch := i.Collector.GetSchedule()
+		sch := i.Collector.Schedule()
 
 		var jd gocron.JobDefinition
-		if sch.Interval != nil {
+		if sch.Interval() != nil {
 			jd = gocron.DurationJob(
-				*(sch.Interval),
+				*(sch.Interval()),
 			)
-		} else if sch.Cron != nil {
+		} else if sch.Cron() != nil {
 			jd = gocron.CronJob(
-				*(sch.Cron),
+				*(sch.Cron()),
 				false,
 			)
 		}
