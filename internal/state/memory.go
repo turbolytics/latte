@@ -2,12 +2,16 @@ package state
 
 import (
 	"context"
+	"github.com/turbolytics/latte/internal/invoker"
+	"go.uber.org/zap"
 	"sync"
 )
 
 type MemoryStore struct {
 	mu          sync.RWMutex
-	invocations map[string]*Invocation
+	invocations map[string]*invoker.Invocation
+
+	logger *zap.Logger
 }
 
 func (m *MemoryStore) Close() error {
@@ -15,7 +19,7 @@ func (m *MemoryStore) Close() error {
 	return nil
 }
 
-func (m *MemoryStore) MostRecentInvocation(ctx context.Context, collector string) (*Invocation, error) {
+func (m *MemoryStore) MostRecentInvocation(ctx context.Context, collector string) (*invoker.Invocation, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -27,7 +31,7 @@ func (m *MemoryStore) MostRecentInvocation(ctx context.Context, collector string
 	return i, nil
 }
 
-func (m *MemoryStore) SaveInvocation(invocation *Invocation) error {
+func (m *MemoryStore) SaveInvocation(invocation *invoker.Invocation) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	mr, found := m.invocations[invocation.CollectorName]
@@ -45,9 +49,21 @@ func (m *MemoryStore) SaveInvocation(invocation *Invocation) error {
 	return nil
 }
 
-func NewMemoryStoreFromGenericConfig(m map[string]any) (*MemoryStore, error) {
+type MemoryStoreOption func(store *MemoryStore)
+
+func MemoryStoreWithLogger(l *zap.Logger) func(store *MemoryStore) {
+	return func(ms *MemoryStore) {
+		ms.logger = l
+	}
+}
+
+func NewMemoryStoreFromGenericConfig(m map[string]any, opts ...MemoryStoreOption) (*MemoryStore, error) {
 	s := &MemoryStore{
-		invocations: make(map[string]*Invocation),
+		invocations: make(map[string]*invoker.Invocation),
+	}
+
+	for _, opt := range opts {
+		opt(s)
 	}
 
 	return s, nil

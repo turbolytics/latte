@@ -8,12 +8,12 @@ import (
 	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
-	"github.com/turbolytics/latte/internal/state"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"io"
 	"time"
 )
 
@@ -26,6 +26,19 @@ const (
 	TypeStrategyIncremental            TypeStrategy = "incremental"
 	TypeStrategyTick                   TypeStrategy = "tick"
 )
+
+type Invocation struct {
+	CollectorName string
+	Time          time.Time
+	Window        *timeseries.Window
+}
+
+func (i Invocation) End() *time.Time {
+	if i.Window != nil {
+		return &i.Window.End
+	}
+	return nil
+}
 
 type Sourcer interface {
 	Source(ctx context.Context) (record.Result, error)
@@ -46,6 +59,13 @@ type Schedule interface {
 	Cron() *string
 }
 
+type Storer interface {
+	io.Closer
+
+	MostRecentInvocation(ctx context.Context, collectorName string) (*Invocation, error)
+	SaveInvocation(invocation *Invocation) error
+}
+
 type Transformer interface {
 	Transform(record.Result) error
 }
@@ -56,7 +76,7 @@ type Collector interface {
 	Sinks() []Sinker
 	Schedule() Schedule
 	Sourcer() Sourcer
-	Storer() state.Storer
+	Storer() Storer
 	Transformer() Transformer
 }
 

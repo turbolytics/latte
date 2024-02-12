@@ -1,8 +1,8 @@
 package metric
 
 import (
+	collconf "github.com/turbolytics/latte/internal/collector/config"
 	"github.com/turbolytics/latte/internal/collector/template"
-	"github.com/turbolytics/latte/internal/invoker"
 	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
@@ -28,6 +28,7 @@ type Metric struct {
 }
 
 type config struct {
+	Collector  collconf.Collector
 	Name       string
 	Metric     Metric
 	Schedule   schedule.Config
@@ -39,41 +40,6 @@ type config struct {
 	// validate will skip initializing network dependencies
 	validate bool
 }
-
-func (c config) GetSchedule() schedule.Config {
-	return c.Schedule
-}
-
-func (c config) GetSource() source.Config {
-	return c.Source
-}
-
-/*
-func (c Collector) GetSinks() []_type.Sinker {
-	var ss []_type.Sinker
-	for _, s := range c.Sinks {
-		ss = append(ss, s.Sinker)
-	}
-	return ss
-}
-*/
-
-func (c config) CollectorName() string {
-	return c.Name
-}
-
-/*
-// initSinks initializes all the outputs
-func initSinks(c *Collector) error {
-	for k, v := range c.Sinks {
-		if err := v.Init(c.validate, c.logger); err != nil {
-			return err
-		}
-		c.Sinks[k] = v
-	}
-	return nil
-}
-*/
 
 func defaults(c *config) error {
 	(&c.Source).SetDefaults()
@@ -101,12 +67,6 @@ func validate(c config) error {
 func NewConfig(raw []byte) (*config, error) {
 	var conf config
 
-	/*
-		for _, opt := range opts {
-			opt(&conf)
-		}
-	*/
-
 	bs, err := template.Parse(raw)
 	if err != nil {
 		return nil, err
@@ -125,82 +85,9 @@ func NewConfig(raw []byte) (*config, error) {
 	}
 
 	/*
-		if err := conf.StateStore.Init(); err != nil {
+		if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
 			return nil, err
 		}
-
-			if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
-				return nil, err
-			}
-
-			if err := initSinks(&conf); err != nil {
-				return nil, err
-			}
-
 	*/
 	return &conf, nil
-}
-
-type Collector struct {
-	config   *config
-	logger   *zap.Logger
-	validate bool
-}
-
-func (c *Collector) Name() string {
-	return ""
-}
-
-func (c *Collector) InvocationStrategy() invoker.TypeStrategy {
-	return invoker.TypeStrategyTick
-}
-
-func (c *Collector) Sinks() []invoker.Sinker {
-	return nil
-}
-
-func (c *Collector) Schedule() invoker.Schedule {
-	return nil
-}
-
-func (c *Collector) Sourcer() invoker.Sourcer {
-	return nil
-}
-
-func (c *Collector) Storer() state.Storer {
-	return nil
-}
-
-func (c *Collector) Transformer() invoker.Transformer {
-	return nil
-}
-
-type Option func(*Collector)
-
-func WithJustValidation(validate bool) Option {
-	return func(c *Collector) {
-		c.validate = validate
-	}
-}
-
-func WithLogger(l *zap.Logger) Option {
-	return func(c *Collector) {
-		c.logger = l
-	}
-}
-func NewCollectorFromConfig(bs []byte, opts ...Option) (*Collector, error) {
-	conf, err := NewConfig(bs)
-	if err != nil {
-		return nil, err
-	}
-
-	collector := &Collector{
-		config: conf,
-	}
-
-	for _, opt := range opts {
-		opt(collector)
-	}
-
-	return collector, nil
 }

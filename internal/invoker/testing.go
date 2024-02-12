@@ -5,7 +5,6 @@ import (
 	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
-	"github.com/turbolytics/latte/internal/state"
 	"time"
 )
 
@@ -114,6 +113,6 @@ func (t TestConfig) Sourcer() Sourcer {
 	return t.sourcer
 }
 
-func (t TestConfig) Storer() state.Storer {
+func (t TestConfig) Storer() Storer {
 	return nil
 }
