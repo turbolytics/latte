@@ -11,6 +11,7 @@ import (
 	"github.com/turbolytics/latte/internal/sink/file"
 	"github.com/turbolytics/latte/internal/sink/http"
 	"github.com/turbolytics/latte/internal/sink/kafka"
+	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -150,6 +151,44 @@ func NewSinks(cs map[string]sink.Config, l *zap.Logger, validate bool) (map[stri
 	return sinks, nil
 }
 
+func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer, error) {
+	var err error
+	var s invoker.Sourcer
+	switch sc.Type {
+	case source.TypePartitionS3:
+		/*
+			s, err = s3.NewFromGenericConfig(
+				sc.Config,
+			)
+		*/
+	case source.TypePostgres:
+		/*
+			s, err = postgres.NewFromGenericConfig(
+				c.Collector,
+				validate,
+			)
+		*/
+	case source.TypeMongoDB:
+		/*
+			s, err = mongodb.NewFromGenericConfig(
+				context.TODO(),
+				sc.Config,
+				validate,
+			)
+		*/
+	case source.TypePrometheus:
+		/*
+			s, err = prometheus.NewFromGenericConfig(
+				c.Collector,
+				prometheus.WithLogger(l),
+		*/
+	default:
+		return nil, fmt.Errorf("source type: %q unknown", sc.Type)
+	}
+
+	return s, err
+}
+
 func NewMetricCollectorFromConfig(bs []byte, validate bool, l *zap.Logger) (*metric.Collector, error) {
 	conf, err := metric.NewConfig(bs)
 	if err != nil {
@@ -175,15 +214,26 @@ func NewMetricCollectorFromConfig(bs []byte, validate bool, l *zap.Logger) (*met
 		return nil, err
 	}
 
+	sourcer, err := NewSourcer(
+		conf.Source,
+		l,
+		validate,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	sch := schedule.New(conf.Schedule)
 
 	coll, err := metric.NewCollector(
 		conf,
 		metric.WithLogger(l),
 		metric.WithValidation(validate),
-		metric.WithStateStore(stateStore),
-		metric.WithSinks(sinks),
 		metric.WithSchedule(sch),
+		metric.WithSinks(sinks),
+		metric.WithSourcer(sourcer),
+		metric.WithStateStore(stateStore),
+
 	)
 
 	return coll, nil

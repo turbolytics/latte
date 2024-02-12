@@ -25,7 +25,11 @@ func (c *Collector) InvocationStrategy() invoker.TypeStrategy {
 }
 
 func (c *Collector) Sinks() []invoker.Sinker {
-	return nil
+	var sinks []invoker.Sinker
+	for _, sink := range c.sinks {
+		sinks = append(sinks, sink)
+	}
+	return sinks
 }
 
 func (c *Collector) Schedule() invoker.Schedule {
@@ -33,7 +37,7 @@ func (c *Collector) Schedule() invoker.Schedule {
 }
 
 func (c *Collector) Sourcer() invoker.Sourcer {
-	return nil
+	return c.sourcer
 }
 
 func (c *Collector) Storer() invoker.Storer {
@@ -46,12 +50,6 @@ func (c *Collector) Transformer() invoker.Transformer {
 
 type Option func(*Collector)
 
-func WithStateStore(ss invoker.Storer) Option {
-	return func(c *Collector) {
-		c.stateStore = ss
-	}
-}
-
 func WithSchedule(sch schedule.Schedule) Option {
 	return func(c *Collector) {
 		c.schedule = sch
@@ -61,6 +59,18 @@ func WithSchedule(sch schedule.Schedule) Option {
 func WithSinks(ss map[string]invoker.Sinker) Option {
 	return func(c *Collector) {
 		c.sinks = ss
+	}
+}
+
+func WithSourcer(s invoker.Sourcer) Option {
+	return func(c *Collector) {
+		c.sourcer = s
+	}
+}
+
+func WithStateStore(ss invoker.Storer) Option {
+	return func(c *Collector) {
+		c.stateStore = ss
 	}
 }
 

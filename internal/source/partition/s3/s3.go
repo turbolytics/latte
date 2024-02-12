@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/partition"
+	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
 	"net/url"
@@ -55,6 +56,10 @@ type Source struct {
 
 func (s *Source) Window() *time.Duration {
 	return s.config.Time.Duration()
+}
+
+func (s *Source) Type() source.Type {
+	return source.TypePartitionS3
 }
 
 func (s *Source) Source(ctx context.Context) (*partition.Partition, error) {

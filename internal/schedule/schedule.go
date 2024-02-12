@@ -27,11 +27,11 @@ type Schedule struct {
 }
 
 func (s Schedule) Interval() *time.Duration {
-	return s.c.Interval
+	return s.config.Interval
 }
 
 func (s Schedule) Cron() *string {
-	return s.c.Cron
+	return s.config.Cron
 }
 
 func New(c Config) Schedule {

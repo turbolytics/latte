@@ -84,10 +84,5 @@ func NewConfig(raw []byte) (*config, error) {
 		return nil, err
 	}
 
-	/*
-		if err := conf.Source.Init(conf.logger, conf.validate); err != nil {
-			return nil, err
-		}
-	*/
 	return &conf, nil
 }
