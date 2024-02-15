@@ -7,13 +7,14 @@ import (
 )
 
 type Collector struct {
-	config     *config
-	logger     *zap.Logger
-	schedule   schedule.Schedule
-	sinks      map[string]invoker.Sinker
-	stateStore invoker.Storer
-	sourcer    invoker.Sourcer
-	validate   bool
+	config      *config
+	logger      *zap.Logger
+	schedule    schedule.Schedule
+	sinks       map[string]invoker.Sinker
+	stateStore  invoker.Storer
+	sourcer     invoker.Sourcer
+	transformer invoker.Transformer
+	validate    bool
 }
 
 func (c *Collector) Name() string {
@@ -45,7 +46,7 @@ func (c *Collector) Storer() invoker.Storer {
 }
 
 func (c *Collector) Transformer() invoker.Transformer {
-	return nil
+	return c.transformer
 }
 
 type Option func(*Collector)
@@ -71,6 +72,12 @@ func WithSourcer(s invoker.Sourcer) Option {
 func WithStateStore(ss invoker.Storer) Option {
 	return func(c *Collector) {
 		c.stateStore = ss
+	}
+}
+
+func WithTransformer(t invoker.Transformer) Option {
+	return func(c *Collector) {
+		c.transformer = t
 	}
 }
 

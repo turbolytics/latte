@@ -5,6 +5,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/record"
+	"github.com/turbolytics/latte/internal/source"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -26,6 +27,10 @@ type Mongo struct {
 
 func (m *Mongo) Window() *time.Duration {
 	return nil
+}
+
+func (m Mongo) Type() source.Type {
+	return source.TypeMongoDB
 }
 
 func (m *Mongo) Source(ctx context.Context) (record.Result, error) {

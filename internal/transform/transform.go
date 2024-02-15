@@ -3,6 +3,7 @@ package transform
 import (
 	"bytes"
 	"github.com/mitchellh/mapstructure"
+	"github.com/turbolytics/latte/internal/record"
 	"text/template"
 )
 
@@ -35,4 +36,10 @@ func NewTemplateFromGenericConfig(m map[string]any) (*Template, error) {
 	}
 
 	return &t, nil
+}
+
+type Noop struct{}
+
+func (n Noop) Transform(record.Result) error {
+	return nil
 }

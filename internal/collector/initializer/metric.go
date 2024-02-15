@@ -1,6 +1,7 @@
 package initializer
 
 import (
+	"context"
 	"fmt"
 	"github.com/turbolytics/latte/internal/collector/metric"
 	"github.com/turbolytics/latte/internal/invoker"
@@ -11,7 +12,9 @@ import (
 	"github.com/turbolytics/latte/internal/sink/http"
 	"github.com/turbolytics/latte/internal/sink/kafka"
 	"github.com/turbolytics/latte/internal/source"
+	"github.com/turbolytics/latte/internal/source/metric/mongodb"
 	"github.com/turbolytics/latte/internal/state"
+	"github.com/turbolytics/latte/internal/transform"
 	"go.uber.org/zap"
 )
 
@@ -84,13 +87,11 @@ func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer
 			)
 		*/
 	case source.TypeMongoDB:
-		/*
-			s, err = mongodb.NewFromGenericConfig(
-				context.TODO(),
-				sc.Config,
-				validate,
-			)
-		*/
+		s, err = mongodb.NewFromGenericConfig(
+			context.TODO(),
+			sc.Config,
+			validate,
+		)
 	case source.TypePrometheus:
 		/*
 			s, err = prometheus.NewFromGenericConfig(
@@ -148,6 +149,7 @@ func NewMetricCollectorFromConfig(bs []byte, validate bool, l *zap.Logger) (*met
 		metric.WithSinks(sinks),
 		metric.WithSourcer(sourcer),
 		metric.WithStateStore(stateStore),
+		metric.WithTransformer(transform.Noop{}),
 	)
 
 	return coll, nil
