@@ -42,7 +42,7 @@ type config struct {
 }
 
 func defaults(c *config) error {
-	(&c.Source).SetDefaults()
+	(&c.Collector).SetDefaults()
 
 	return nil
 }
@@ -50,7 +50,7 @@ func defaults(c *config) error {
 func validate(c config) error {
 	validaters := []validater{
 		c.Schedule,
-		c.Source,
+		c.Collector,
 		c.StateStore,
 	}
 

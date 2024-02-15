@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/latte/internal/collector/config"
+	"github.com/turbolytics/latte/internal/collector/initializer"
 	"github.com/turbolytics/latte/internal/invoker"
 	"github.com/turbolytics/latte/internal/obs"
 	"github.com/turbolytics/latte/internal/service"
@@ -60,9 +60,9 @@ func NewRunCmd() *cobra.Command {
 			)
 
 			// initialize all collectors in the path
-			collectors, err := config.NewFromGlob(
+			collectors, err := initializer.NewCollectorsFromGlob(
 				configsGlob,
-				config.RootWithLogger(logger),
+				initializer.RootWithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
