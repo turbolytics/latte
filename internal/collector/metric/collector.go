@@ -1,10 +1,40 @@
 package metric
 
 import (
+	"fmt"
 	"github.com/turbolytics/latte/internal/invoker"
+	"github.com/turbolytics/latte/internal/metric"
+	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/schedule"
 	"go.uber.org/zap"
 )
+
+type Transformer struct {
+	wrapped invoker.Transformer
+	config  *config
+}
+
+func (t Transformer) Transform(r record.Result) error {
+	// generic invoker passes control back to concrete metrics
+	// collector
+	metricResult, ok := r.(*metric.Metrics)
+	if !ok {
+		return fmt.Errorf("cannot convert %v to *metric.Metrics result", r)
+	}
+
+	for _, m := range metricResult.Metrics {
+		m.Name = t.config.Metric.Name
+		m.Type = t.config.Metric.Type
+
+		// enrich with tags
+		// should these be copied?
+		for _, t := range t.config.Metric.Tags {
+			m.Tags[t.Key] = t.Value
+		}
+	}
+
+	return t.wrapped.Transform(r)
+}
 
 type Collector struct {
 	config      *config
@@ -46,6 +76,8 @@ func (c *Collector) Storer() invoker.Storer {
 }
 
 func (c *Collector) Transformer() invoker.Transformer {
+	// this is the configuration defined transform.
+	// Metrics also need to be enriched with default behavior.
 	return c.transformer
 }
 
@@ -77,7 +109,10 @@ func WithStateStore(ss invoker.Storer) Option {
 
 func WithTransformer(t invoker.Transformer) Option {
 	return func(c *Collector) {
-		c.transformer = t
+		c.transformer = Transformer{
+			config:  c.config,
+			wrapped: t,
+		}
 	}
 }
 

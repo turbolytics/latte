@@ -14,7 +14,7 @@ schedule:
   interval: 10s
 
 source:
-  type: mongodb
+  type: metric.mongodb
   config:
     uri: 'mongodb://test:test@{{ getEnvOrDefault "SC_MONGO_HOST" "127.0.0.1" }}:27017/test?authSource=admin'
     database: test

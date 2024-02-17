@@ -3,10 +3,10 @@ package source
 type Type string
 
 const (
-	TypeMongoDB     Type = "mongodb"
-	TypePartitionS3 Type = "partition.s3"
-	TypePostgres    Type = "postgres"
-	TypePrometheus  Type = "prometheus"
+	TypeMetricMongoDB  Type = "metric.mongodb"
+	TypeMetricPostgres Type = "metric.postgres"
+	TypePartitionS3    Type = "partition.s3"
+	TypePrometheus     Type = "prometheus"
 )
 
 type Config struct {

@@ -30,7 +30,7 @@ func (m *Mongo) Window() *time.Duration {
 }
 
 func (m Mongo) Type() source.Type {
-	return source.TypeMongoDB
+	return source.TypeMetricMongoDB
 }
 
 func (m *Mongo) Source(ctx context.Context) (record.Result, error) {

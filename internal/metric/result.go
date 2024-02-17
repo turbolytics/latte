@@ -5,12 +5,12 @@ import (
 )
 
 type Metrics struct {
-	metrics []*Metric
+	Metrics []*Metric
 }
 
 func (m *Metrics) Records() []record.Record {
 	var records []record.Record
-	for _, m := range m.metrics {
+	for _, m := range m.Metrics {
 		records = append(records, m)
 	}
 	return records
@@ -18,7 +18,7 @@ func (m *Metrics) Records() []record.Record {
 
 func NewMetricsResult(ms []*Metric) *Metrics {
 	metrics := &Metrics{
-		metrics: ms,
+		Metrics: ms,
 	}
 
 	return metrics

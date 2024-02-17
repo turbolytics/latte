@@ -11,6 +11,7 @@ import (
 	"github.com/turbolytics/latte/internal/sink/kafka"
 	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/source/metric/mongodb"
+	"github.com/turbolytics/latte/internal/source/metric/postgres"
 	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 )
@@ -60,14 +61,12 @@ func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer
 				sc.Config,
 			)
 		*/
-	case source.TypePostgres:
-		/*
-			s, err = postgres.NewFromGenericConfig(
-				c.Collector,
-				validate,
-			)
-		*/
-	case source.TypeMongoDB:
+	case source.TypeMetricPostgres:
+		s, err = postgres.NewFromGenericConfig(
+			sc.Config,
+			validate,
+		)
+	case source.TypeMetricMongoDB:
 		s, err = mongodb.NewFromGenericConfig(
 			context.TODO(),
 			sc.Config,
