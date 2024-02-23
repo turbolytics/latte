@@ -10,6 +10,8 @@ import (
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/metric"
+	"github.com/turbolytics/latte/internal/record"
+	"github.com/turbolytics/latte/internal/source"
 	scsql "github.com/turbolytics/latte/internal/sql"
 	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
@@ -153,11 +155,15 @@ CREATE TABLE prom_metrics (
 	return scsql.RowsToMaps(rows)
 }
 
+func (p *Prometheus) Type() source.Type {
+	return source.TypePrometheus
+}
+
 func (p *Prometheus) Window() *time.Duration {
 	return p.config.Time.Duration()
 }
 
-func (p *Prometheus) Source(ctx context.Context) ([]*metric.Metric, error) {
+func (p *Prometheus) Source(ctx context.Context) (record.Result, error) {
 	// This is already starting to devolve :sweat:
 	windowStart := ctx.Value("window.start").(time.Time)
 	windowEnd := ctx.Value("window.end").(time.Time)
@@ -184,7 +190,9 @@ func (p *Prometheus) Source(ctx context.Context) ([]*metric.Metric, error) {
 			m.Window = &windowStart
 		}
 	}
-	return ms, err
+	metricsResult := metric.NewMetricsResult(ms)
+
+	return metricsResult, err
 }
 
 func NewFromGenericConfig(m map[string]any, opts ...Option) (*Prometheus, error) {

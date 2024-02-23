@@ -12,6 +12,7 @@ import (
 	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/source/metric/mongodb"
 	"github.com/turbolytics/latte/internal/source/metric/postgres"
+	"github.com/turbolytics/latte/internal/source/metric/prometheus"
 	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 )
@@ -55,12 +56,6 @@ func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer
 	var err error
 	var s invoker.Sourcer
 	switch sc.Type {
-	case source.TypePartitionS3:
-		/*
-			s, err = s3.NewFromGenericConfig(
-				sc.Config,
-			)
-		*/
 	case source.TypeMetricPostgres:
 		s, err = postgres.NewFromGenericConfig(
 			sc.Config,
@@ -73,11 +68,10 @@ func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer
 			validate,
 		)
 	case source.TypePrometheus:
-		/*
-			s, err = prometheus.NewFromGenericConfig(
-				c.Collector,
-				prometheus.WithLogger(l),
-		*/
+		s, err = prometheus.NewFromGenericConfig(
+			sc.Config,
+			prometheus.WithLogger(l),
+		)
 	default:
 		return nil, fmt.Errorf("source type: %q unknown", sc.Type)
 	}

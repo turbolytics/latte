@@ -146,6 +146,9 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 	}()
 
 	sr, err = s.Source(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	i.logger.Debug("collector.Source",
 		zap.String("collector.invocation_strategy", string(i.Collector.InvocationStrategy())),
@@ -154,6 +157,43 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 		zap.Int("results.count", len(sr.Records())),
 	)
 	return sr, err
+}
+
+func (i *Invoker) invokeWindowSourceAndSave(ctx context.Context, window timeseries.Window) error {
+	id := ctx.Value("id").(uuid.UUID)
+	i.logger.Info(
+		"invoker.invokeWindowSourceAndSave",
+		zap.String("msg", "invoking for window"),
+		zap.String("window.start", window.Start.String()),
+		zap.String("window.end", window.End.String()),
+		zap.String("id", id.String()),
+		zap.String("name", i.Collector.Name()),
+	)
+	ctx = context.WithValue(ctx, "window.start", window.Start)
+	ctx = context.WithValue(ctx, "window.end", window.End)
+
+	r, err := i.Source(ctx)
+	if err != nil {
+		return err
+	}
+
+	tr := i.Collector.Transformer()
+	if err := tr.Transform(r); err != nil {
+		return err
+	}
+
+	if err = i.Sink(ctx, r); err != nil {
+		return err
+	}
+
+	state := i.Collector.Storer()
+	err = state.SaveInvocation(&Invocation{
+		CollectorName: i.Collector.Name(),
+		Time:          i.now(),
+		Window:        &window,
+	})
+
+	return err
 }
 
 func (i *Invoker) invokeTick(ctx context.Context) error {
@@ -178,7 +218,6 @@ func (i *Invoker) invokeTick(ctx context.Context) error {
 		)
 	}
 
-	// how to get additional context to transform function?
 	tr := i.Collector.Transformer()
 	if err := tr.Transform(sr); err != nil {
 		return err
@@ -187,21 +226,6 @@ func (i *Invoker) invokeTick(ctx context.Context) error {
 	if err = i.Sink(ctx, sr); err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func (i *Invoker) invokeHistoricTumblingWindowSourceAndSave(ctx context.Context, window timeseries.Window) error {
-	id := ctx.Value("id").(uuid.UUID)
-
-	i.logger.Info(
-		"collector.invokeHistoricTumblingWindowSourceAndSave",
-		zap.String("msg", "invoking for window"),
-		zap.String("window.start", window.Start.String()),
-		zap.String("window.end", window.End.String()),
-		zap.String("id", id.String()),
-		zap.String("name", i.Collector.Name()),
-	)
 
 	return nil
 }
@@ -220,13 +244,14 @@ func (i *Invoker) invokeHistoricTumblingWindow(ctx context.Context) error {
 	}
 
 	var lastWindowEnd *time.Time
-	if i != nil {
+	if inv != nil {
 		lastWindowEnd = inv.End()
 	}
 
 	hw := timeseries.NewHistoricTumblingWindower(
 		timeseries.WithHistoricTumblingWindowerNow(i.now),
 	)
+
 	s := i.Collector.Sourcer()
 	windows, err := hw.FullWindowsSince(
 		lastWindowEnd,
@@ -242,7 +267,7 @@ func (i *Invoker) invokeHistoricTumblingWindow(ctx context.Context) error {
 		return nil
 	case 1:
 		// a single window is available, collect it
-		// sr, err = i.invokeWindowSourceAndSave(ctx, id, windows[0])
+		return i.invokeWindowSourceAndSave(ctx, windows[0])
 	default:
 		// multiple windows have been found, currently
 		// not supported
@@ -352,6 +377,9 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 func New(collector Collector, opts ...Option) (*Invoker, error) {
 	i := &Invoker{
 		Collector: collector,
+		now: func() time.Time {
+			return time.Now().UTC()
+		},
 	}
 
 	for _, opt := range opts {

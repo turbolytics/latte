@@ -72,14 +72,6 @@ func NewCollector(bs []byte, opts ...RootOption) (invoker.Collector, error) {
 			conf.Validate,
 			conf.Logger,
 		)
-	case config.TypePartition:
-		/*
-			collConfig, err := partition.NewConfig(
-				bs,
-				partition.ConfigWithJustValidation(conf.validate),
-				partition.ConfigWithLogger(conf.logger),
-			)
-		*/
 	default:
 		return nil, fmt.Errorf("collector type: %v not supported", conf.Collector.Type)
 	}
