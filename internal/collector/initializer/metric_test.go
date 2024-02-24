@@ -43,7 +43,10 @@ sinks:
       path: /tmp/log/latte.audit.log
 `)
 
-	c, err := NewCollector(bs)
+	c, err := NewCollector(
+		bs,
+		WithJustValidation(true),
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, "postgres_users_total_30s", c.Name())
 	fmt.Printf("%+v", c)
