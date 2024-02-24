@@ -3,7 +3,8 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/latte/internal/collector"
+	"github.com/turbolytics/latte/internal/collector/initializer"
+	"github.com/turbolytics/latte/internal/invoker"
 	"github.com/turbolytics/latte/internal/obs"
 	"github.com/turbolytics/latte/internal/service"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -59,22 +60,32 @@ func NewRunCmd() *cobra.Command {
 			)
 
 			// initialize all collectors in the path
-			is, err := collector.NewFromGlob(
+			collectors, err := initializer.NewCollectorsFromGlob(
 				configsGlob,
-				collector.RootWithLogger(logger),
+				initializer.RootWithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
 			}
 
+			var invokers []*invoker.Invoker
+			for _, coll := range collectors {
+				i, err := invoker.New(coll,
+					invoker.WithLogger(logger),
+				)
+				if err != nil {
+					panic(err)
+				}
+				invokers = append(invokers, i)
+			}
 			logger.Info(
 				"initialized invokers",
-				zap.Int("num_invokers", len(is)),
+				zap.Int("num_invokers", len(invokers)),
 			)
 
 			// invocation all collectors at their desired intervals
 			s, err := service.NewService(
-				is,
+				invokers,
 				service.WithLogger(logger),
 			)
 			if err != nil {

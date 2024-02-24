@@ -6,12 +6,15 @@ collector:
 metric:
   name: core.users.total
   type: COUNT
+  tags:
+    - key: env
+      value: prod
 
 schedule:
   interval: 24h
 
 source:
-  type: postgres
+  type: metric.postgres
   config:
     uri: 'postgresql://test:test@{{ getEnvOrDefault "SC_POSTGRES_HOST" "127.0.0.1" }}:5432/test?sslmode=disable'
     sql: |
@@ -28,11 +31,3 @@ sinks:
     type: file
     config:
       path: /tmp/log/latte.audit.log
-
-  kafka:
-    type: kafka
-    config:
-      brokers:
-        - '{{ getEnvOrDefault "SC_KAFKA_HOST" "localhost:9092" }}'
-      topic: latte
-      allow_auto_topic_creation: true

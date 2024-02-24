@@ -1,4 +1,14 @@
-name: postgres_users_total_1m
+package initializer
+
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+func TestNewMetricCollectorFromConfig_Success(t *testing.T) {
+	bs := []byte(`
+name: postgres_users_total_30s
 
 collector:
   type: metric
@@ -11,7 +21,7 @@ metric:
       value: prod
 
 schedule:
-  cron: '* * * * *'
+  interval: 30s
 
 source:
   type: metric.postgres
@@ -31,3 +41,13 @@ sinks:
     type: file
     config:
       path: /tmp/log/latte.audit.log
+`)
+
+	c, err := NewCollector(
+		bs,
+		WithJustValidation(true),
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, "postgres_users_total_30s", c.Name())
+	fmt.Printf("%+v", c)
+}

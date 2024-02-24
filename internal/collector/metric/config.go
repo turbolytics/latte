@@ -1,16 +1,12 @@
 package metric
 
 import (
-	"context"
-	"fmt"
+	collconf "github.com/turbolytics/latte/internal/collector/config"
 	"github.com/turbolytics/latte/internal/collector/template"
 	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/source"
-	"github.com/turbolytics/latte/internal/source/metric/mongodb"
-	"github.com/turbolytics/latte/internal/source/metric/postgres"
-	prometheus2 "github.com/turbolytics/latte/internal/source/metric/prometheus"
 	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -31,7 +27,8 @@ type Metric struct {
 	Tags []Tag
 }
 
-type Config struct {
+type config struct {
+	Collector  collconf.Collector
 	Name       string
 	Metric     Metric
 	Schedule   schedule.Config
@@ -44,90 +41,16 @@ type Config struct {
 	validate bool
 }
 
-func (c Config) GetSchedule() schedule.Config {
-	return c.Schedule
-}
-
-func (c Config) GetSinks() []sink.Sinker {
-	var ss []sink.Sinker
-	for _, s := range c.Sinks {
-		ss = append(ss, s.Sinker)
-	}
-	return ss
-}
-
-func (c Config) CollectorName() string {
-	return c.Name
-}
-
-type ConfigOption func(*Config)
-
-func ConfigWithJustValidation(validate bool) ConfigOption {
-	return func(c *Config) {
-		c.validate = validate
-	}
-}
-
-func ConfigWithLogger(l *zap.Logger) ConfigOption {
-	return func(c *Config) {
-		c.logger = l
-	}
-}
-
-// initSource initializes the correct source.
-func initSource(c *Config) error {
-	var s source.MetricSourcer
-	var err error
-	switch c.Source.Type {
-	case source.TypePostgres:
-		s, err = postgres.NewFromGenericConfig(
-			c.Source.Config,
-			c.validate,
-		)
-	case source.TypeMongoDB:
-		s, err = mongodb.NewFromGenericConfig(
-			context.TODO(),
-			c.Source.Config,
-			c.validate,
-		)
-	case source.TypePrometheus:
-		s, err = prometheus2.NewFromGenericConfig(
-			c.Source.Config,
-			prometheus2.WithLogger(c.logger),
-		)
-	default:
-		return fmt.Errorf("source type: %q unknown", c.Source.Type)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	c.Source.MetricSourcer = s
-	return nil
-}
-
-// initSinks initializes all the outputs
-func initSinks(c *Config) error {
-	for k, v := range c.Sinks {
-		if err := v.Init(c.validate, c.logger); err != nil {
-			return err
-		}
-		c.Sinks[k] = v
-	}
-	return nil
-}
-
-func defaults(c *Config) error {
-	(&c.Source).SetDefaults()
+func defaults(c *config) error {
+	(&c.Collector).SetDefaults()
 
 	return nil
 }
 
-func validate(c Config) error {
+func validate(c config) error {
 	validaters := []validater{
 		c.Schedule,
-		c.Source,
+		c.Collector,
 		c.StateStore,
 	}
 
@@ -141,12 +64,8 @@ func validate(c Config) error {
 
 // NewConfig initializes a config from yaml bytes.
 // NewConfig initializes all subtypes as well.
-func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
-	var conf Config
-
-	for _, opt := range opts {
-		opt(&conf)
-	}
+func NewConfig(raw []byte) (*config, error) {
+	var conf config
 
 	bs, err := template.Parse(raw)
 	if err != nil {
@@ -165,16 +84,5 @@ func NewConfig(raw []byte, opts ...ConfigOption) (*Config, error) {
 		return nil, err
 	}
 
-	if err := conf.StateStore.Init(); err != nil {
-		return nil, err
-	}
-
-	if err := initSource(&conf); err != nil {
-		return nil, err
-	}
-
-	if err := initSinks(&conf); err != nil {
-		return nil, err
-	}
 	return &conf, nil
 }

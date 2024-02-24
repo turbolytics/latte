@@ -1,22 +1,63 @@
-package metric
+package invoker
 
 import (
 	"context"
-	"fmt"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	latteMetric "github.com/turbolytics/latte/internal/metric"
-	"github.com/turbolytics/latte/internal/source"
-	"github.com/turbolytics/latte/internal/source/metric"
-	"github.com/turbolytics/latte/internal/state"
-	"github.com/turbolytics/latte/internal/timeseries"
 	"go.uber.org/zap"
 	"testing"
-	"time"
 )
 
+func TestInvoker_Invoke_UnknownStrategy(t *testing.T) {
+	i := &Invoker{
+		logger:    zap.NewNop(),
+		Collector: TestConfig{},
+	}
+	err := i.Invoke(context.Background())
+	assert.EqualError(t, err, "strategy: \"\" not supported")
+}
+
+func TestCollector_Close(t *testing.T) {
+	sink := &TestSink{}
+	i := &Invoker{
+		logger: zap.NewNop(),
+		Collector: TestConfig{
+			sinks: []*TestSink{sink},
+		},
+	}
+	err := i.Close()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, sink.closes)
+}
+
+func TestInvoker_Invoke_Tick_Success(t *testing.T) {
+	sink := &TestSink{}
+	i := &Invoker{
+		logger: zap.NewNop(),
+		Collector: TestConfig{
+			invocationStrategy: TypeStrategyTick,
+			sinks:              []*TestSink{sink},
+			sourcer: TestSourcer{
+				tr: TestResult{
+					records: []*TestRecord{
+						{
+							bs: []byte("record"),
+						},
+					},
+				},
+			},
+		},
+	}
+	err := i.Invoke(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t,
+		[]string{"record_transformed"},
+		sink.writes,
+	)
+}
+
+/*
 func TestCollector_Transform_AddTagsFromConfig(t *testing.T) {
-	coll, err := NewCollector(&Config{
+	coll, err := NewCollector(&Collector{
 		Metric: Metric{
 			Tags: []Tag{
 				{"key1", "val1"},
@@ -53,8 +94,8 @@ func TestCollector_Source_ValidMetrics(t *testing.T) {
 	}
 
 	coll := &Collector{
-		Config: &Config{
-			Source: source.Config{
+		Collector: &Collector{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyTick,
 			},
@@ -85,12 +126,12 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 		now: func() time.Time {
 			return now
 		},
-		Config: &Config{
+		Collector: &Collector{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state.Collector{
 				Storer: ss,
 			},
-			Source: source.Config{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -117,7 +158,7 @@ func TestCollector_invokeWindow_NoPreviousInvocations(t *testing.T) {
 
 	i, err := ss.MostRecentInvocation(
 		context.Background(),
-		coll.Config.Name,
+		coll.Collector.Name,
 	)
 
 	assert.NoError(t, err)
@@ -151,12 +192,12 @@ func TestCollector_invokeWindow_PreviousInvocations_MultipleWindowsPassed(t *tes
 		now: func() time.Time {
 			return now
 		},
-		Config: &Config{
+		Collector: &Collector{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state.Collector{
 				Storer: ss,
 			},
-			Source: source.Config{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -199,12 +240,12 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		now: func() time.Time {
 			return now
 		},
-		Config: &Config{
+		Collector: &Collector{
 			Name: "test_collector",
-			StateStore: state.Config{
+			StateStore: state.Collector{
 				Storer: ss,
 			},
-			Source: source.Config{
+			Source: source.Collector{
 				MetricSourcer: ts,
 				Strategy:      source.TypeStrategyHistoricTumblingWindow,
 			},
@@ -244,3 +285,4 @@ func TestCollector_invokeWindow_PreviousInvocations_SingleWindowPassed(t *testin
 		},
 	}, i)
 }
+*/

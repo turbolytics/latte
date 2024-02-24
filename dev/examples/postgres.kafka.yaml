@@ -1,4 +1,4 @@
-name: postgres_users_total_30s
+name: postgres_users_total_24h
 
 collector:
   type: metric
@@ -6,15 +6,12 @@ collector:
 metric:
   name: core.users.total
   type: COUNT
-  tags:
-    - key: env
-      value: prod
 
 schedule:
-  interval: 30s
+  interval: 24h
 
 source:
-  type: postgres
+  type: metric.postgres
   config:
     uri: 'postgresql://test:test@{{ getEnvOrDefault "SC_POSTGRES_HOST" "127.0.0.1" }}:5432/test?sslmode=disable'
     sql: |
@@ -32,7 +29,10 @@ sinks:
     config:
       path: /tmp/log/latte.audit.log
 
-  vector:
-    type: http
+  kafka:
+    type: kafka
     config:
-      uri: 'http://{{ getEnvOrDefault "SC_VECTOR_HOST" "127.0.0.1" }}:9999/metrics'
+      brokers:
+        - '{{ getEnvOrDefault "SC_KAFKA_HOST" "localhost:9092" }}'
+      topic: latte
+      allow_auto_topic_creation: true

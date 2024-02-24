@@ -1,4 +1,4 @@
-name: postgres_users_total_24h
+name: postgres_users_total_30s
 
 collector:
   type: metric
@@ -11,10 +11,10 @@ metric:
       value: prod
 
 schedule:
-  interval: 24h
+  interval: 30s
 
 source:
-  type: postgres
+  type: metric.postgres
   config:
     uri: 'postgresql://test:test@{{ getEnvOrDefault "SC_POSTGRES_HOST" "127.0.0.1" }}:5432/test?sslmode=disable'
     sql: |
@@ -31,3 +31,8 @@ sinks:
     type: file
     config:
       path: /tmp/log/latte.audit.log
+
+  vector:
+    type: http
+    config:
+      uri: 'http://{{ getEnvOrDefault "SC_VECTOR_HOST" "127.0.0.1" }}:9999/metrics'

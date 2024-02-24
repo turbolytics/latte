@@ -21,3 +21,21 @@ func (s Config) Validate() error {
 
 	return nil
 }
+
+type Schedule struct {
+	config Config
+}
+
+func (s Schedule) Interval() *time.Duration {
+	return s.config.Interval
+}
+
+func (s Schedule) Cron() *string {
+	return s.config.Cron
+}
+
+func New(c Config) Schedule {
+	return Schedule{
+		config: c,
+	}
+}

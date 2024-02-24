@@ -131,10 +131,12 @@ FROM
 	ctx = context.WithValue(ctx, "window.start", start)
 	ctx = context.WithValue(ctx, "window.end", time.Now().UTC())
 
-	ms, err := p.Source(ctx)
+	rs, err := p.Source(ctx)
 	assert.NoError(t, err)
 
-	for _, m := range ms {
+	ms := rs.(*metric.Metrics)
+
+	for _, m := range ms.Metrics {
 		m.UUID = ""
 		m.Timestamp = time.Time{}
 	}
@@ -188,5 +190,5 @@ FROM
 				"error":          "false",
 			},
 		},
-	}, ms)
+	}, ms.Metrics)
 }

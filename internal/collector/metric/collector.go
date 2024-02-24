@@ -1,271 +1,136 @@
 package metric
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	latteMetric "github.com/turbolytics/latte/internal/metric"
-	"github.com/turbolytics/latte/internal/obs"
-	"github.com/turbolytics/latte/internal/source"
-	"github.com/turbolytics/latte/internal/state"
-	"github.com/turbolytics/latte/internal/timeseries"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
+	"github.com/turbolytics/latte/internal/invoker"
+	"github.com/turbolytics/latte/internal/metric"
+	"github.com/turbolytics/latte/internal/record"
+	"github.com/turbolytics/latte/internal/schedule"
 	"go.uber.org/zap"
-	"time"
 )
 
-var meter = otel.Meter("latte-collector")
-
-type Collector struct {
-	Config *Config
-
-	logger *zap.Logger
-	now    func() time.Time
+type Transformer struct {
+	wrapped invoker.Transformer
+	config  *config
 }
 
-func (c *Collector) Transform(ms []*latteMetric.Metric) error {
-	for _, m := range ms {
-		m.Name = c.Config.Metric.Name
-		m.Type = c.Config.Metric.Type
+func (t Transformer) Transform(r record.Result) error {
+	// generic invoker passes control back to concrete metrics
+	// collector
+	metricResult, ok := r.(*metric.Metrics)
+	if !ok {
+		return fmt.Errorf("cannot convert %v to *metric.Metrics result", r)
+	}
+
+	for _, m := range metricResult.Metrics {
+		m.Name = t.config.Metric.Name
+		m.Type = t.config.Metric.Type
 
 		// enrich with tags
 		// should these be copied?
-		for _, t := range c.Config.Metric.Tags {
+		for _, t := range t.config.Metric.Tags {
 			m.Tags[t.Key] = t.Value
 		}
-
-	}
-	return nil
-}
-
-func (c *Collector) Source(ctx context.Context) (ms []*latteMetric.Metric, err error) {
-	start := time.Now().UTC()
-
-	histogram, _ := meter.Float64Histogram(
-		"collector.source.duration",
-		metric.WithUnit("s"),
-	)
-
-	defer func() {
-		duration := time.Since(start)
-
-		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
-			attribute.NewSet(
-				attribute.String("result.status_code", obs.ErrToStatus(err)),
-				attribute.String("source.type", string(c.Config.Source.Type)),
-			),
-		))
-
-		meter.Int64ObservableGauge(
-			"collector.source.metrics.total",
-			metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-				o.Observe(int64(len(ms)), metric.WithAttributeSet(
-					attribute.NewSet(
-						attribute.String("source.type", string(c.Config.Source.Type)),
-					),
-				))
-				return nil
-			}),
-		)
-
-	}()
-
-	ms, err = c.Config.Source.MetricSourcer.Source(ctx)
-	if err != nil {
-		return nil, err
 	}
 
-	return ms, nil
+	return t.wrapped.Transform(r)
 }
 
-func (c *Collector) Sink(ctx context.Context, metrics []*latteMetric.Metric) error {
+type Collector struct {
+	config      *config
+	logger      *zap.Logger
+	schedule    schedule.Schedule
+	sinks       map[string]invoker.Sinker
+	stateStore  invoker.Storer
+	sourcer     invoker.Sourcer
+	transformer invoker.Transformer
+	validate    bool
+}
 
-	histogram, _ := meter.Float64Histogram(
-		"collector.sink.duration",
-		metric.WithUnit("s"),
-	)
-	// add tags from config
+func (c *Collector) Name() string {
+	return c.config.Name
+}
 
-	// need to add a serializer
-	for _, m := range metrics {
-		bs, err := json.Marshal(m)
-		if err != nil {
-			return err
+func (c *Collector) InvocationStrategy() invoker.TypeStrategy {
+	return c.config.Collector.InvocationStrategy
+}
+
+func (c *Collector) Sinks() []invoker.Sinker {
+	var sinks []invoker.Sinker
+	for _, sink := range c.sinks {
+		sinks = append(sinks, sink)
+	}
+	return sinks
+}
+
+func (c *Collector) Schedule() invoker.Schedule {
+	return c.schedule
+}
+
+func (c *Collector) Sourcer() invoker.Sourcer {
+	return c.sourcer
+}
+
+func (c *Collector) Storer() invoker.Storer {
+	return c.stateStore
+}
+
+func (c *Collector) Transformer() invoker.Transformer {
+	// this is the configuration defined transform.
+	// Metrics also need to be enriched with default behavior.
+	return c.transformer
+}
+
+type Option func(*Collector)
+
+func WithSchedule(sch schedule.Schedule) Option {
+	return func(c *Collector) {
+		c.schedule = sch
+	}
+}
+
+func WithSinks(ss map[string]invoker.Sinker) Option {
+	return func(c *Collector) {
+		c.sinks = ss
+	}
+}
+
+func WithSourcer(s invoker.Sourcer) Option {
+	return func(c *Collector) {
+		c.sourcer = s
+	}
+}
+
+func WithStateStore(ss invoker.Storer) Option {
+	return func(c *Collector) {
+		c.stateStore = ss
+	}
+}
+
+func WithTransformer(t invoker.Transformer) Option {
+	return func(c *Collector) {
+		c.transformer = Transformer{
+			config:  c.config,
+			wrapped: t,
 		}
-		for _, s := range c.Config.Sinks {
-			start := time.Now().UTC()
-
-			_, err := s.Sinker.Write(bs)
-
-			duration := time.Since(start)
-			histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(
-					attribute.String("result.status_code", obs.ErrToStatus(err)),
-					attribute.String("sink.name", string(s.Type)),
-				),
-			))
-
-			if err != nil {
-				return err
-			}
-
-		}
 	}
-	return nil
 }
 
-func (c *Collector) invokeTick(ctx context.Context, id uuid.UUID) ([]*latteMetric.Metric, error) {
-	ms, err := c.Source(ctx)
-	if err != nil {
-		return nil, err
+func WithValidation(validate bool) Option {
+	return func(c *Collector) {
+		c.validate = validate
 	}
-
-	// only sink if metrics are present:
-	if len(ms) == 0 {
-		c.logger.Warn(
-			"collector.Invoke",
-			zap.String("msg", "no metrics found"),
-			zap.String("id", id.String()),
-			zap.String("name", c.Config.Name),
-		)
-		return ms, err
-	}
-
-	if err = c.Transform(ms); err != nil {
-		return ms, err
-	}
-
-	if err = c.Sink(ctx, ms); err != nil {
-		return ms, err
-	}
-
-	return ms, err
 }
 
-func (c *Collector) invokeWindowSourceAndSave(ctx context.Context, id uuid.UUID, window timeseries.Window) ([]*latteMetric.Metric, error) {
-	c.logger.Info(
-		"collector.invokeWindow",
-		zap.String("msg", "invoking for window"),
-		zap.String("window.start", window.Start.String()),
-		zap.String("window.end", window.End.String()),
-		zap.String("id", id.String()),
-		zap.String("name", c.Config.CollectorName()),
-	)
-
-	// it is passed the window, collect data for the window
-	// get start of window and end of window
-	ctx = context.WithValue(ctx, "window.start", window.Start)
-	ctx = context.WithValue(ctx, "window.end", window.End)
-	ms, err := c.Source(ctx)
-	if err != nil {
-		return ms, err
-	}
-
-	err = c.Config.StateStore.Storer.SaveInvocation(&state.Invocation{
-		CollectorName: c.Config.Name,
-		Time:          c.now(),
-		Window:        &window,
-	})
-	return ms, err
-}
-
-// invokeWindow uses the state store to check if a full window has elapsed.
-// invokeWindow will only source data when a full window has elapsed.
-// TODO - What happens when a window is changed in the config?
-func (c *Collector) invokeWindow(ctx context.Context, id uuid.UUID) ([]*latteMetric.Metric, error) {
-	var ms []*latteMetric.Metric
-	var err error
-	// TODO invokeWindow should handle gaps in windows.
-	i, err := c.Config.StateStore.Storer.MostRecentInvocation(
-		ctx,
-		c.Config.Name,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	var lastWindowEnd *time.Time
-	if i != nil {
-		lastWindowEnd = i.End()
-	}
-
-	hw := timeseries.NewHistoricTumblingWindower(
-		timeseries.WithHistoricTumblingWindowerNow(c.now),
-	)
-	windows, err := hw.FullWindowsSince(
-		lastWindowEnd,
-		*(c.Config.Source.MetricSourcer.Window()),
-	)
-	if err != nil {
-		return nil, err
-	}
-	switch len(windows) {
-	case 0:
-		// no full windows have passed, just return
-		return nil, nil
-	case 1:
-		// a single window is available, collect it
-		ms, err = c.invokeWindowSourceAndSave(ctx, id, windows[0])
-	default:
-		// multiple windows have been found, currently
-		// not supported
-		c.logger.Error(
-			"collector.invokeWindow",
-			zap.String("msg", "multiple windows detected"),
-			zap.Int("windows", len(windows)),
-			zap.String("id", id.String()),
-			zap.String("name", c.Config.Name),
-		)
-		return nil, fmt.Errorf("backfilling multiple windows not yet supported: %v", windows)
-	}
-
-	if err = c.Transform(ms); err != nil {
-		return ms, err
-	}
-
-	if err = c.Sink(ctx, ms); err != nil {
-		return ms, err
-	}
-
-	return ms, err
-}
-
-func (c *Collector) Invoke(ctx context.Context) (err error) {
-	id := ctx.Value("id").(uuid.UUID)
-	// Collector supports multiple sourcing strategies.
-	// The simplest is "tick" strategy which just invokes
-	// the sourcer without any additional state necessary
-	// The windowing strategy may result in multiple source
-	// invocations for each window that needs to be executed.
-	switch c.Config.Source.Strategy {
-	case source.TypeStrategyTick:
-		_, err = c.invokeTick(ctx, id)
-	case source.TypeStrategyHistoricTumblingWindow:
-		_, err = c.invokeWindow(ctx, id)
-	default:
-		return fmt.Errorf("strategy: %q not supported", c.Config.Source.Strategy)
-	}
-
-	return err
-}
-
-type CollectorOption func(*Collector)
-
-func CollectorWithLogger(l *zap.Logger) CollectorOption {
+func WithLogger(l *zap.Logger) Option {
 	return func(c *Collector) {
 		c.logger = l
 	}
 }
 
-func NewCollector(config *Config, opts ...CollectorOption) (*Collector, error) {
+func NewCollector(conf *config, opts ...Option) (*Collector, error) {
 	c := &Collector{
-		Config: config,
-		now: func() time.Time {
-			return time.Now().UTC()
-		},
+		config: conf,
 	}
 	for _, opt := range opts {
 		opt(c)

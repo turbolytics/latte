@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"github.com/mitchellh/mapstructure"
+	"github.com/turbolytics/latte/internal/sink"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 type config struct {
 	URI     string
 	Method  string
-	Body    string
 	Headers map[string]string
 }
 
@@ -31,6 +31,10 @@ type HTTP struct {
 
 func (h *HTTP) Close() error {
 	return nil
+}
+
+func (h *HTTP) Type() sink.Type {
+	return sink.TypeHTTP
 }
 
 func (h *HTTP) Write(bs []byte) (int, error) {
@@ -62,6 +66,7 @@ func (h *HTTP) Write(bs []byte) (int, error) {
 	h.logger.Debug(
 		"http.response",
 		zap.String("name", "http.sink"),
+		zap.Int("response.status_cod", resp.StatusCode),
 		zap.ByteString("resp", body),
 	)
 

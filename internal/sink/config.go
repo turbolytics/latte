@@ -9,9 +9,7 @@ const (
 	TypeFile    Type = "file"
 )
 
-// Sinker is responsible for sinking
-// TODO - Starting with an io.Writer for right now.
-type Sinker interface {
-	Write([]byte) (int, error)
-	Close() error
+type Config struct {
+	Type   Type
+	Config map[string]any
 }

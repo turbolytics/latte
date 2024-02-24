@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"strconv"
@@ -27,6 +28,10 @@ type Metric struct {
 	// For 'tick' collectors, this time aligns with the `Timestamp`.
 	// For `window` collectors, this time represents the windowing being collected.
 	Window *time.Time `json:"window"`
+}
+
+func (m *Metric) Bytes() ([]byte, error) {
+	return json.Marshal(m)
 }
 
 func New(opts ...MetricOption) Metric {

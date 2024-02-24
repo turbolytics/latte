@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/metric"
+	"github.com/turbolytics/latte/internal/record"
+	"github.com/turbolytics/latte/internal/source"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -27,7 +29,11 @@ func (m *Mongo) Window() *time.Duration {
 	return nil
 }
 
-func (m *Mongo) Source(ctx context.Context) ([]*metric.Metric, error) {
+func (m Mongo) Type() source.Type {
+	return source.TypeMetricMongoDB
+}
+
+func (m *Mongo) Source(ctx context.Context) (record.Result, error) {
 	p, err := ParseAgg(m.config.Agg)
 	if err != nil {
 		return nil, err
@@ -53,7 +59,9 @@ func (m *Mongo) Source(ctx context.Context) ([]*metric.Metric, error) {
 	}
 
 	ms, err := metric.MapsToMetrics(rs)
-	return ms, err
+
+	metricsResult := metric.NewMetricsResult(ms)
+	return metricsResult, err
 }
 
 func NewFromGenericConfig(ctx context.Context, m map[string]any, validate bool) (*Mongo, error) {

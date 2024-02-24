@@ -3,7 +3,8 @@ package config
 import (
 	"context"
 	"github.com/spf13/cobra"
-	"github.com/turbolytics/latte/internal/collector"
+	"github.com/turbolytics/latte/internal/collector/initializer"
+	"github.com/turbolytics/latte/internal/invoker"
 	"go.uber.org/zap"
 )
 
@@ -22,16 +23,23 @@ func NewInvokeCmd() *cobra.Command {
 
 			ctx := context.Background()
 
-			c, err := collector.NewFromFile(
+			c, err := initializer.NewCollectorFromFile(
 				configPath,
-				collector.WithJustValidation(false),
-				collector.RootWithLogger(logger),
+				initializer.WithJustValidation(false),
+				initializer.RootWithLogger(logger),
 			)
 			if err != nil {
 				panic(err)
 			}
 
-			if err = c.Invoke(ctx); err != nil {
+			i, err := invoker.New(c,
+				invoker.WithLogger(logger),
+			)
+			if err != nil {
+				panic(err)
+			}
+
+			if err = i.Invoke(ctx); err != nil {
 				panic(err)
 			}
 		},
