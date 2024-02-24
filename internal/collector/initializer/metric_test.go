@@ -24,7 +24,7 @@ schedule:
   interval: 30s
 
 source:
-  type: postgres
+  type: metric.postgres
   config:
     uri: 'postgresql://test:test@{{ getEnvOrDefault "SC_POSTGRES_HOST" "127.0.0.1" }}:5432/test?sslmode=disable'
     sql: |

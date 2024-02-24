@@ -82,10 +82,12 @@ func TestIntegration_Mongo_Source(t *testing.T) {
 	)
 
 	assert.NoError(t, err)
-	ms, err := mSource.Source(ctx)
+	rs, err := mSource.Source(ctx)
 	assert.NoError(t, err)
 
-	for _, m := range ms {
+	ms := rs.(*metric.Metrics)
+
+	for _, m := range ms.Metrics {
 		m.Timestamp = time.Time{}
 		m.UUID = ""
 	}
@@ -103,6 +105,6 @@ func TestIntegration_Mongo_Source(t *testing.T) {
 				"account": "google",
 			},
 		},
-	}, ms)
+	}, ms.Metrics)
 
 }
