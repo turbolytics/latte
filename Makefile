@@ -1,6 +1,7 @@
 
 
 test-unit:
+	mkdir -p /tmp/log && touch /tmp/log/latte.audit.log
 	go test -short ./...
 
 test-integration:

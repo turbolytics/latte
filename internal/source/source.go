@@ -5,8 +5,7 @@ type Type string
 const (
 	TypeMetricMongoDB  Type = "metric.mongodb"
 	TypeMetricPostgres Type = "metric.postgres"
-	// TypePartitionS3    Type = "partition.s3"
-	TypePrometheus Type = "prometheus"
+	TypePrometheus     Type = "metric.prometheus"
 )
 
 type Config struct {
