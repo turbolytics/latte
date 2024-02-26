@@ -33,6 +33,10 @@ func (h *HTTP) Close() error {
 	return nil
 }
 
+func (h *HTTP) Flush() error {
+	return nil
+}
+
 func (h *HTTP) Type() sink.Type {
 	return sink.TypeHTTP
 }

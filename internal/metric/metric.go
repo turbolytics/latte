@@ -1,7 +1,6 @@
 package metric
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"strconv"
@@ -30,8 +29,21 @@ type Metric struct {
 	Window *time.Time `json:"window"`
 }
 
-func (m *Metric) Bytes() ([]byte, error) {
-	return json.Marshal(m)
+func (m *Metric) Map() map[string]any {
+	s := map[string]any{
+		"uuid":      m.UUID,
+		"name":      m.Name,
+		"value":     m.Value,
+		"type":      m.Type,
+		"timestamp": m.Timestamp,
+		"window":    m.Window,
+	}
+
+	for _, tag := range m.Tags {
+		k := fmt.Sprintf("tag.%s", tag)
+		s[k] = m.Tags[tag]
+	}
+	return s
 }
 
 func New(opts ...MetricOption) Metric {

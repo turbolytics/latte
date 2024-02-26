@@ -1,7 +1,7 @@
 package record
 
 type Record interface {
-	Bytes() ([]byte, error)
+	Map() map[string]any
 }
 
 type Result interface {
