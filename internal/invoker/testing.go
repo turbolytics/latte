@@ -14,18 +14,22 @@ func (tt TestTransformer) Transform(r record.Result) error {
 	tr := r.(TestResult)
 
 	for _, rec := range tr.records {
-		rec.bs = []byte(string(rec.bs) + "_transformed")
+		tm := make(map[string]any)
+		for k, v := range rec.Map() {
+			tm[k+"_transformed"] = v.(string) + "_transformed"
+		}
+		rec.m = tm
 	}
 
 	return nil
 }
 
 type TestRecord struct {
-	bs []byte
+	m map[string]any
 }
 
-func (tr TestRecord) Bytes() ([]byte, error) {
-	return tr.bs, nil
+func (tr TestRecord) Map() map[string]any {
+	return tr.m
 }
 
 type TestResult struct {
@@ -42,15 +46,15 @@ func (tr TestResult) Records() []record.Record {
 
 type TestSink struct {
 	closes int
-	writes []string
+	writes []record.Record
 }
 
 func (ts TestSink) Type() sink.Type {
 	return "tester"
 }
 
-func (ts *TestSink) Write(bs []byte) (int, error) {
-	ts.writes = append(ts.writes, string(bs))
+func (ts *TestSink) Write(r record.Record) (int, error) {
+	ts.writes = append(ts.writes, r)
 	return 0, nil
 }
 
