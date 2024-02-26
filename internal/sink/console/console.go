@@ -16,6 +16,10 @@ func (c *Console) Close() error {
 	return nil
 }
 
+func (c *Console) Flush() error {
+	return nil
+}
+
 func (c *Console) Type() sink.Type {
 	return sink.TypeConsole
 }

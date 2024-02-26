@@ -49,9 +49,10 @@ type Sourcer interface {
 // Sinker is responsible for sinking
 // TODO - Starting with an io.Writer for right now.
 type Sinker interface {
-	Write([]byte) (int, error)
+	Write(record.Record) (int, error)
 	Close() error
 	Type() sink.Type
+	Flush() error
 }
 
 type Schedule interface {
@@ -297,14 +298,10 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 
 	// need to add a serializer
 	for _, r := range rs {
-		bs, err := r.Bytes()
-		if err != nil {
-			return err
-		}
 		for _, s := range sinks {
 			start := time.Now().UTC()
 
-			_, err := s.Write(bs)
+			_, err := s.Write(r)
 
 			duration := time.Since(start)
 			histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
@@ -318,6 +315,9 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 				return err
 			}
 
+			if err := s.Flush(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

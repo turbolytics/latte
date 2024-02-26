@@ -19,6 +19,10 @@ func (fs *File) Close() error {
 	return fs.f.Close()
 }
 
+func (fs *File) Flush() error {
+	return nil
+}
+
 func (fs *File) Type() sink.Type {
 	return sink.TypeHTTP
 }
