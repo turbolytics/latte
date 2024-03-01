@@ -22,6 +22,7 @@ func TestNewConfigFromFile(t *testing.T) {
 		{"postgres.fileaudit.yaml"},
 		{"postgres.http.yaml"},
 		{"postgres.kafka.yaml"},
+		{"postgres.s3.yaml"},
 		{"postgres.stdout.yaml"},
 		{"prometheus.fileaudit.yaml"},
 	}
@@ -44,5 +45,5 @@ func TestNewConfigsFromGlob(t *testing.T) {
 		WithJustValidation(true),
 	)
 	assert.NoError(t, err)
-	assert.Equal(t, 6, len(cs))
+	assert.Equal(t, 7, len(cs))
 }

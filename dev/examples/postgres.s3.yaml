@@ -35,25 +35,25 @@ sinks:
       bucket: localstack-latte
       endpoint: 'http://localhost:4566'
       prefix: 'postgres/total-users'
-      batch_size: 10000
+#      batch_size: 10000
       # partition:
       #  type: template
       #  config:
-      encoding:
-        type: parquet
-        config:
-          schema:
-            - name: uuid
-              type: BYTE_ARRAY
-            - name: name
-              type: BYTE_ARRAY
-            - name: value
-              type: DOUBLE
-            - name: type
-              type: BYTE_ARRAY
-            - name: timestamp
-              type: INT64
-            - name: tags_customer
-              type: BYTE_ARRAY
-            - name: tags_env
-              type: BYTE_ARRAY
+#      encoding:
+#        type: parquet
+#        config:
+#          schema:
+#            - name: uuid
+#              type: BYTE_ARRAY
+#            - name: name
+#              type: BYTE_ARRAY
+#            - name: value
+#              type: DOUBLE
+#            - name: type
+#              type: BYTE_ARRAY
+#            - name: timestamp
+#              type: INT64
+#            - name: tags_customer
+#              type: BYTE_ARRAY
+#            - name: tags_env
+#              type: BYTE_ARRAY

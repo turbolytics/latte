@@ -1,14 +1,19 @@
 package s3
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/encoding"
 	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 	"go.uber.org/zap"
+	"path"
 )
 
 type config struct {
@@ -30,11 +35,12 @@ func WithLogger(l *zap.Logger) Option {
 }
 
 type S3 struct {
-	client  *s3.S3
+	buf     *bytes.Buffer
 	config  config
 	encoder encoding.Encoder
 
-	logger *zap.Logger
+	logger   *zap.Logger
+	uploader *s3manager.Uploader
 }
 
 func (s *S3) Close() error {
@@ -42,7 +48,34 @@ func (s *S3) Close() error {
 }
 
 func (s *S3) Flush() error {
-	return nil
+	fname := fmt.Sprintf("%s.json", uuid.New().String())
+
+	k := path.Join(
+		s.config.Prefix,
+		fname,
+	)
+
+	s.logger.Debug("sinks.S3.uploading",
+		zap.String("bucket", s.config.Bucket),
+		zap.String("key", k),
+	)
+
+	_, err := s.uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(s.config.Bucket),
+
+		// Can also use the `filepath` standard library package to modify the
+		// filename as need for an S3 object key. Such as turning absolute path
+		// to a relative path.
+		Key: aws.String(k),
+
+		// The file to be uploaded. io.ReadSeeker is preferred as the Uploader
+		// will be able to optimize memory when uploading large content. io.Reader
+		// is supported, but will require buffering of the reader's bytes for
+		// each part.
+		Body: bufio.NewReader(s.buf),
+	})
+
+	return err
 }
 
 func (s *S3) Type() sink.Type {
@@ -50,6 +83,17 @@ func (s *S3) Type() sink.Type {
 }
 
 func (s *S3) Write(r record.Record) (int, error) {
+	if s.buf == nil {
+		s.buf = &bytes.Buffer{}
+	}
+	if err := s.encoder.Init(s.buf); err != nil {
+		return 0, err
+	}
+
+	if err := s.encoder.Write(r.Map()); err != nil {
+		return 0, err
+	}
+
 	return 0, nil
 }
 
@@ -77,12 +121,12 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*S3, error) {
 	}
 
 	sess, _ := session.NewSession(awsConfig)
-	client := s3.New(sess)
+	uploader := s3manager.NewUploader(sess)
 
 	s := &S3{
-		client:  client,
-		config:  conf,
-		encoder: e,
+		config:   conf,
+		encoder:  e,
+		uploader: uploader,
 	}
 
 	for _, opt := range opts {

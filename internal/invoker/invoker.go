@@ -297,27 +297,34 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 	sinks := i.Collector.Sinks()
 
 	// need to add a serializer
-	for _, r := range rs {
-		for _, s := range sinks {
-			start := time.Now().UTC()
+	for _, s := range sinks {
+		start := time.Now().UTC()
+		var err error
 
-			_, err := s.Write(r)
+		for _, r := range rs {
 
-			duration := time.Since(start)
-			histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(
-					attribute.String("result.status_code", obs.ErrToStatus(err)),
-					attribute.String("sink.name", string(s.Type())),
-				),
-			))
+			_, err = s.Write(r)
 
 			if err != nil {
-				return err
+				break
 			}
 
-			if err := s.Flush(); err != nil {
-				return err
-			}
+		}
+
+		duration := time.Since(start)
+		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
+			attribute.NewSet(
+				attribute.String("result.status_code", obs.ErrToStatus(err)),
+				attribute.String("sink.name", string(s.Type())),
+			),
+		))
+
+		if err != nil {
+			return err
+		}
+
+		if err := s.Flush(); err != nil {
+			return err
 		}
 	}
 	return nil

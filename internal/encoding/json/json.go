@@ -28,7 +28,12 @@ func (j *JSON) Write(d any) error {
 	if err != nil {
 		return err
 	}
-	_, err = j.buf.Write(bs)
+	if _, err = j.buf.Write(bs); err != nil {
+		return err
+	}
+
+	_, err = j.buf.Write([]byte("\n"))
+
 	return err
 }
 

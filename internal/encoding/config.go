@@ -2,7 +2,6 @@ package encoding
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/turbolytics/latte/internal/encoding/json"
 	"github.com/turbolytics/latte/internal/encoding/parquet"
 )
@@ -35,7 +34,6 @@ func NewEncoder(c Config) (Encoder, error) {
 		e, err = parquet.NewFromGenericConfig(c.Config)
 	default:
 		e, err = json.NewFromGenericConfig(c.Config)
-		return nil, fmt.Errorf("encoding type: %q not supported", c.Type)
 	}
 	return e, err
 }
