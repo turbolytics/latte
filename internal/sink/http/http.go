@@ -3,6 +3,8 @@ package http
 import (
 	"bytes"
 	"github.com/mitchellh/mapstructure"
+	"github.com/turbolytics/latte/internal/encoding"
+	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 	"go.uber.org/zap"
 	"io"
@@ -10,9 +12,10 @@ import (
 )
 
 type config struct {
-	URI     string
-	Method  string
-	Headers map[string]string
+	Encoding encoding.Config
+	Headers  map[string]string
+	Method   string
+	URI      string
 }
 
 type Option func(*HTTP)
@@ -24,7 +27,8 @@ func WithLogger(l *zap.Logger) Option {
 }
 
 type HTTP struct {
-	config config
+	config  config
+	encoder encoding.Encoder
 
 	logger *zap.Logger
 }
@@ -33,12 +37,25 @@ func (h *HTTP) Close() error {
 	return nil
 }
 
+func (h *HTTP) Flush() error {
+	return nil
+}
+
 func (h *HTTP) Type() sink.Type {
 	return sink.TypeHTTP
 }
 
-func (h *HTTP) Write(bs []byte) (int, error) {
-	buf := bytes.NewBuffer(bs)
+func (h *HTTP) Write(r record.Record) (int, error) {
+	buf := &bytes.Buffer{}
+	if err := h.encoder.Init(buf); err != nil {
+		return 0, nil
+	}
+
+	if err := h.encoder.Write(r.Map()); err != nil {
+		return 0, err
+	}
+
+	bs := buf.Bytes()
 
 	req, err := http.NewRequest(
 		h.config.Method,
@@ -79,8 +96,15 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*HTTP, error) {
 		return nil, err
 	}
 
+	e, err := encoding.NewEncoder(conf.Encoding)
+
+	if err != nil {
+		return nil, err
+	}
+
 	h := &HTTP{
-		config: conf,
+		config:  conf,
+		encoder: e,
 	}
 	for _, opt := range opts {
 		opt(h)

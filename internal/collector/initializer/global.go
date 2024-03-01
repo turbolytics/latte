@@ -9,6 +9,7 @@ import (
 	"github.com/turbolytics/latte/internal/sink/file"
 	"github.com/turbolytics/latte/internal/sink/http"
 	"github.com/turbolytics/latte/internal/sink/kafka"
+	"github.com/turbolytics/latte/internal/sink/s3"
 	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/source/metric/mongodb"
 	"github.com/turbolytics/latte/internal/source/metric/postgres"
@@ -23,18 +24,25 @@ func NewSink(c sink.Config, l *zap.Logger, validate bool) (invoker.Sinker, error
 	switch c.Type {
 	case sink.TypeConsole:
 		s, err = console.NewFromGenericConfig(c.Config)
-	case sink.TypeKafka:
-		s, err = kafka.NewFromGenericConfig(c.Config)
-	case sink.TypeHTTP:
-		s, err = http.NewFromGenericConfig(
-			c.Config,
-			http.WithLogger(l),
-		)
 	case sink.TypeFile:
 		s, err = file.NewFromGenericConfig(
 			c.Config,
 			validate,
 		)
+	case sink.TypeHTTP:
+		s, err = http.NewFromGenericConfig(
+			c.Config,
+			http.WithLogger(l),
+		)
+	case sink.TypeKafka:
+		s, err = kafka.NewFromGenericConfig(c.Config)
+	case sink.TypeS3:
+		s, err = s3.NewFromGenericConfig(
+			c.Config,
+			s3.WithLogger(l),
+		)
+	default:
+		return nil, fmt.Errorf("sink type: %q not supported", c.Type)
 	}
 	return s, err
 }

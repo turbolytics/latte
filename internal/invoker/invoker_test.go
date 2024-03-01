@@ -3,6 +3,7 @@ package invoker
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
+	"github.com/turbolytics/latte/internal/record"
 	"go.uber.org/zap"
 	"testing"
 )
@@ -40,7 +41,9 @@ func TestInvoker_Invoke_Tick_Success(t *testing.T) {
 				tr: TestResult{
 					records: []*TestRecord{
 						{
-							bs: []byte("record"),
+							m: map[string]any{
+								"key": "value",
+							},
 						},
 					},
 				},
@@ -50,7 +53,13 @@ func TestInvoker_Invoke_Tick_Success(t *testing.T) {
 	err := i.Invoke(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t,
-		[]string{"record_transformed"},
+		[]record.Record{
+			&TestRecord{
+				m: map[string]any{
+					"key_transformed": "value_transformed",
+				},
+			},
+		},
 		sink.writes,
 	)
 }

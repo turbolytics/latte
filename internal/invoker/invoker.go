@@ -49,9 +49,10 @@ type Sourcer interface {
 // Sinker is responsible for sinking
 // TODO - Starting with an io.Writer for right now.
 type Sinker interface {
-	Write([]byte) (int, error)
+	Write(record.Record) (int, error)
 	Close() error
 	Type() sink.Type
+	Flush() error
 }
 
 type Schedule interface {
@@ -296,28 +297,34 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 	sinks := i.Collector.Sinks()
 
 	// need to add a serializer
-	for _, r := range rs {
-		bs, err := r.Bytes()
+	for _, s := range sinks {
+		start := time.Now().UTC()
+		var err error
+
+		for _, r := range rs {
+
+			_, err = s.Write(r)
+
+			if err != nil {
+				break
+			}
+
+		}
+
+		duration := time.Since(start)
+		histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
+			attribute.NewSet(
+				attribute.String("result.status_code", obs.ErrToStatus(err)),
+				attribute.String("sink.name", string(s.Type())),
+			),
+		))
+
 		if err != nil {
 			return err
 		}
-		for _, s := range sinks {
-			start := time.Now().UTC()
 
-			_, err := s.Write(bs)
-
-			duration := time.Since(start)
-			histogram.Record(ctx, duration.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(
-					attribute.String("result.status_code", obs.ErrToStatus(err)),
-					attribute.String("sink.name", string(s.Type())),
-				),
-			))
-
-			if err != nil {
-				return err
-			}
-
+		if err := s.Flush(); err != nil {
+			return err
 		}
 	}
 	return nil

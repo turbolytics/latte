@@ -1,32 +1,53 @@
 package kafka
 
 import (
+	"bytes"
 	"context"
 	"github.com/mitchellh/mapstructure"
 	"github.com/segmentio/kafka-go"
+	"github.com/turbolytics/latte/internal/encoding"
+	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 )
 
 type config struct {
 	Brokers                []string
+	Encoding               encoding.Config
 	Topic                  string
 	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
 }
 
 type Kafka struct {
 	config config
-	writer *kafka.Writer
+
+	encoder encoding.Encoder
+	writer  *kafka.Writer
 }
 
 func (k *Kafka) Close() error {
 	return k.writer.Close()
 }
 
+func (k *Kafka) Flush() error {
+	return nil
+}
+
 func (k *Kafka) Type() sink.Type {
 	return sink.TypeKafka
 }
 
-func (k *Kafka) Write(bs []byte) (int, error) {
+func (k *Kafka) Write(r record.Record) (int, error) {
+	buf := &bytes.Buffer{}
+	if err := k.encoder.Init(buf); err != nil {
+		return 0, nil
+	}
+
+	if err := k.encoder.Write(r.Map()); err != nil {
+		return 0, err
+	}
+
+	bs := buf.Bytes()
+
 	err := k.writer.WriteMessages(context.TODO(),
 		kafka.Message{
 			Value: bs,
@@ -41,15 +62,21 @@ func NewFromGenericConfig(m map[string]any) (*Kafka, error) {
 		return nil, err
 	}
 
-	var w *kafka.Writer
-	w = &kafka.Writer{
+	w := &kafka.Writer{
 		Addr:                   kafka.TCP(conf.Brokers...),
 		Topic:                  conf.Topic,
 		AllowAutoTopicCreation: conf.AllowAutoTopicCreation,
 	}
 
+	e, err := encoding.NewEncoder(conf.Encoding)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &Kafka{
-		config: conf,
-		writer: w,
+		config:  conf,
+		encoder: e,
+		writer:  w,
 	}, nil
 }

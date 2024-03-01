@@ -1,0 +1,59 @@
+name: postgres_users_total
+
+collector:
+  type: metric
+
+metric:
+  name: core.users.total
+  type: COUNT
+  tags:
+    - key: env
+      value: dev
+
+schedule:
+  interval: 1m
+
+source:
+  type: metric.postgres
+  config:
+    uri: 'postgresql://test:test@{{ getEnvOrDefault "SC_POSTGRES_HOST" "127.0.0.1" }}:5432/test?sslmode=disable'
+    sql: |
+      SELECT 
+        account as customer,
+        COUNT(*) as value
+      FROM 
+        users
+      GROUP BY
+        account
+
+sinks:
+  s3:
+    type: s3
+    config:
+      region: us-east-1
+      force_path_style: true
+      bucket: localstack-latte
+      endpoint: 'http://localhost:4566'
+      prefix: 'postgres/total-users'
+#      batch_size: 10000
+      # partition:
+      #  type: template
+      #  config:
+#      encoding:
+#        type: parquet
+#        config:
+#          schema:
+#            - name: uuid
+#              type: BYTE_ARRAY
+#            - name: name
+#              type: BYTE_ARRAY
+#            - name: value
+#              type: DOUBLE
+#            - name: type
+#              type: BYTE_ARRAY
+#            - name: timestamp
+#              type: INT64
+#            - name: tags_customer
+#              type: BYTE_ARRAY
+#            - name: tags_env
+#              type: BYTE_ARRAY

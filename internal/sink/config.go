@@ -7,6 +7,7 @@ const (
 	TypeHTTP    Type = "http"
 	TypeKafka   Type = "kafka"
 	TypeFile    Type = "file"
+	TypeS3      Type = "s3"
 )
 
 type Config struct {
