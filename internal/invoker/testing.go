@@ -53,12 +53,12 @@ func (ts TestSink) Type() sink.Type {
 	return "tester"
 }
 
-func (ts *TestSink) Write(r record.Record) (int, error) {
+func (ts *TestSink) Write(ctx context.Context, r record.Record) (int, error) {
 	ts.writes = append(ts.writes, r)
 	return 0, nil
 }
 
-func (ts *TestSink) Flush() error {
+func (ts *TestSink) Flush(ctx context.Context) error {
 	return nil
 }
 

@@ -35,10 +35,8 @@ sinks:
       bucket: localstack-latte
       endpoint: 'http://localhost:4566'
       prefix: 'postgres/total-users'
-#      batch_size: 10000
-      # partition:
-      #  type: template
-      #  config:
+      partition: year={{.Year}}/month={{.Month}}/day={{.Day}}
+      #     batch_size: 10000
 #      encoding:
 #        type: parquet
 #        config:

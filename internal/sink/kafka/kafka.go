@@ -28,7 +28,7 @@ func (k *Kafka) Close() error {
 	return k.writer.Close()
 }
 
-func (k *Kafka) Flush() error {
+func (k *Kafka) Flush(ctx context.Context) error {
 	return nil
 }
 
@@ -36,7 +36,7 @@ func (k *Kafka) Type() sink.Type {
 	return sink.TypeKafka
 }
 
-func (k *Kafka) Write(r record.Record) (int, error) {
+func (k *Kafka) Write(ctx context.Context, r record.Record) (int, error) {
 	buf := &bytes.Buffer{}
 	if err := k.encoder.Init(buf); err != nil {
 		return 0, nil

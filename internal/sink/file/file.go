@@ -2,6 +2,7 @@ package file
 
 import (
 	"bytes"
+	"context"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/encoding"
 	"github.com/turbolytics/latte/internal/record"
@@ -24,7 +25,7 @@ func (fs *File) Close() error {
 	return fs.f.Close()
 }
 
-func (fs *File) Flush() error {
+func (fs *File) Flush(ctx context.Context) error {
 	return nil
 }
 
@@ -32,7 +33,7 @@ func (fs *File) Type() sink.Type {
 	return sink.TypeHTTP
 }
 
-func (fs *File) Write(r record.Record) (int, error) {
+func (fs *File) Write(ctx context.Context, r record.Record) (int, error) {
 	buf := &bytes.Buffer{}
 	if err := fs.encoder.Init(buf); err != nil {
 		return 0, nil
