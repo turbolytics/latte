@@ -49,10 +49,10 @@ type Sourcer interface {
 // Sinker is responsible for sinking
 // TODO - Starting with an io.Writer for right now.
 type Sinker interface {
-	Write(record.Record) (int, error)
+	Write(context.Context, record.Record) (int, error)
 	Close() error
 	Type() sink.Type
-	Flush() error
+	Flush(context.Context) error
 }
 
 type Schedule interface {
@@ -199,6 +199,8 @@ func (i *Invoker) invokeWindowSourceAndSave(ctx context.Context, window timeseri
 
 func (i *Invoker) invokeTick(ctx context.Context) error {
 	id := ctx.Value("id").(uuid.UUID)
+	start := ctx.Value("invocation.start").(time.Time)
+	ctx = context.WithValue(ctx, "window.start", start)
 
 	i.logger.Debug("collector.invokeTick",
 		zap.String("id", id.String()),
@@ -286,7 +288,6 @@ func (i *Invoker) invokeHistoricTumblingWindow(ctx context.Context) error {
 }
 
 func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
-
 	histogram, _ := meter.Float64Histogram(
 		"collector.sink.duration",
 		metric.WithUnit("s"),
@@ -303,7 +304,7 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 
 		for _, r := range rs {
 
-			_, err = s.Write(r)
+			_, err = s.Write(ctx, r)
 
 			if err != nil {
 				break
@@ -323,7 +324,7 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 			return err
 		}
 
-		if err := s.Flush(); err != nil {
+		if err := s.Flush(ctx); err != nil {
 			return err
 		}
 	}
@@ -367,6 +368,7 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 		zap.String("name", i.Collector.Name()),
 	)
 	ctx = context.WithValue(ctx, "id", id)
+	ctx = context.WithValue(ctx, "invocation.start", start)
 
 	strat := i.Collector.InvocationStrategy()
 	switch strat {

@@ -3,6 +3,7 @@ package console
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/encoding"
@@ -25,7 +26,7 @@ func (c *Console) Close() error {
 	return nil
 }
 
-func (c *Console) Flush() error {
+func (c *Console) Flush(ctx context.Context) error {
 	return nil
 }
 
@@ -33,7 +34,7 @@ func (c *Console) Type() sink.Type {
 	return sink.TypeConsole
 }
 
-func (c *Console) Write(r record.Record) (int, error) {
+func (c *Console) Write(ctx context.Context, r record.Record) (int, error) {
 	buf := &bytes.Buffer{}
 	if err := c.encoder.Init(buf); err != nil {
 		return 0, nil

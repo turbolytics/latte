@@ -3,6 +3,7 @@ package s3
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -10,10 +11,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/encoding"
+	"github.com/turbolytics/latte/internal/partition"
 	"github.com/turbolytics/latte/internal/record"
 	"github.com/turbolytics/latte/internal/sink"
 	"go.uber.org/zap"
 	"path"
+	"time"
 )
 
 type config struct {
@@ -24,6 +27,7 @@ type config struct {
 	Endpoint         *string
 	Region           string
 	S3ForcePathStyle bool `mapstructure:"force_path_style"`
+	Partition        string
 }
 
 type Option func(*S3)
@@ -39,19 +43,26 @@ type S3 struct {
 	config  config
 	encoder encoding.Encoder
 
-	logger   *zap.Logger
-	uploader *s3manager.Uploader
+	logger      *zap.Logger
+	partitioner *partition.Partitioner
+	uploader    *s3manager.Uploader
 }
 
 func (s *S3) Close() error {
 	return nil
 }
 
-func (s *S3) Flush() error {
+func (s *S3) Flush(ctx context.Context) error {
+	start := ctx.Value("window.start").(time.Time)
 	fname := fmt.Sprintf("%s.json", uuid.New().String())
+	p, err := s.partitioner.Render(start)
+	if err != nil {
+		return err
+	}
 
 	k := path.Join(
 		s.config.Prefix,
+		p,
 		fname,
 	)
 
@@ -60,7 +71,7 @@ func (s *S3) Flush() error {
 		zap.String("key", k),
 	)
 
-	_, err := s.uploader.Upload(&s3manager.UploadInput{
+	_, err = s.uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.config.Bucket),
 
 		// Can also use the `filepath` standard library package to modify the
@@ -82,7 +93,7 @@ func (s *S3) Type() sink.Type {
 	return sink.TypeS3
 }
 
-func (s *S3) Write(r record.Record) (int, error) {
+func (s *S3) Write(ctx context.Context, r record.Record) (int, error) {
 	if s.buf == nil {
 		s.buf = &bytes.Buffer{}
 	}
@@ -110,6 +121,11 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*S3, error) {
 		return nil, err
 	}
 
+	p, err := partition.New(conf.Partition)
+	if err != nil {
+		return nil, err
+	}
+
 	awsConfig := &aws.Config{
 		Region: aws.String(conf.Region),
 		// Credentials:      credentials.NewStaticCredentials("test", "test", ""),
@@ -124,9 +140,10 @@ func NewFromGenericConfig(m map[string]any, opts ...Option) (*S3, error) {
 	uploader := s3manager.NewUploader(sess)
 
 	s := &S3{
-		config:   conf,
-		encoder:  e,
-		uploader: uploader,
+		config:      conf,
+		encoder:     e,
+		partitioner: p,
+		uploader:    uploader,
 	}
 
 	for _, opt := range opts {

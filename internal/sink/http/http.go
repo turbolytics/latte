@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"github.com/mitchellh/mapstructure"
 	"github.com/turbolytics/latte/internal/encoding"
 	"github.com/turbolytics/latte/internal/record"
@@ -37,7 +38,7 @@ func (h *HTTP) Close() error {
 	return nil
 }
 
-func (h *HTTP) Flush() error {
+func (h *HTTP) Flush(ctx context.Context) error {
 	return nil
 }
 
@@ -45,7 +46,7 @@ func (h *HTTP) Type() sink.Type {
 	return sink.TypeHTTP
 }
 
-func (h *HTTP) Write(r record.Record) (int, error) {
+func (h *HTTP) Write(ctx context.Context, r record.Record) (int, error) {
 	buf := &bytes.Buffer{}
 	if err := h.encoder.Init(buf); err != nil {
 		return 0, nil

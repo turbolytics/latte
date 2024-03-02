@@ -3,6 +3,7 @@ package initializer
 import (
 	"context"
 	"fmt"
+	"github.com/turbolytics/latte/internal/collector/template"
 	"github.com/turbolytics/latte/internal/invoker"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/sink/console"
@@ -63,6 +64,14 @@ func NewSinks(cs map[string]sink.Config, l *zap.Logger, validate bool) (map[stri
 func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer, error) {
 	var err error
 	var s invoker.Sourcer
+
+	// enabling templating across a couple of fixed, known configuration fields
+	bs, err := template.Parse([]byte(sc.Config["uri"].(string)))
+	if err != nil {
+		return nil, err
+	}
+	sc.Config["uri"] = string(bs)
+
 	switch sc.Type {
 	case source.TypeMetricPostgres:
 		s, err = postgres.NewFromGenericConfig(

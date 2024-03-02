@@ -2,7 +2,6 @@ package metric
 
 import (
 	collconf "github.com/turbolytics/latte/internal/collector/config"
-	"github.com/turbolytics/latte/internal/collector/template"
 	"github.com/turbolytics/latte/internal/metric"
 	"github.com/turbolytics/latte/internal/schedule"
 	"github.com/turbolytics/latte/internal/sink"
@@ -67,12 +66,14 @@ func validate(c config) error {
 func NewConfig(raw []byte) (*config, error) {
 	var conf config
 
-	bs, err := template.Parse(raw)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		bs, err := template.Parse(raw)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
-	if err := yaml.Unmarshal(bs, &conf); err != nil {
+	if err := yaml.Unmarshal(raw, &conf); err != nil {
 		return nil, err
 	}
 
