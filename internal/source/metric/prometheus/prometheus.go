@@ -159,7 +159,7 @@ func (p *Prometheus) Type() source.Type {
 	return source.TypePrometheus
 }
 
-func (p *Prometheus) Window() *time.Duration {
+func (p *Prometheus) WindowDuration() *time.Duration {
 	return p.config.Time.Duration()
 }
 

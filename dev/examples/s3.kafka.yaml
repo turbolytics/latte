@@ -1,0 +1,52 @@
+name: daily_users
+
+collector:
+  type: metric
+
+metric:
+  name: daily_active_users
+  type: COUNT
+  tags:
+    - key: env
+      value: prod
+
+schedule:
+  interval: 1m
+
+source:
+  type: metric.s3
+  config:
+    region: us-east-1
+    bucket: localstack-latte
+    endpoint: 's3.localhost.localstack.cloud:4566'
+    prefix: 'activity-events'
+    partition: year={{.Year}}/month={{.Month}}/day={{.Day}}
+    # Each event has structure of:
+    # - user_id <string>
+    # - customer_id <string>
+    sql: |
+      SELECT 
+        COUNT(DISTINCT user_id) as value,
+        customer_id
+      FROM
+        read_json_auto({{.Source}}) 
+      GROUP BY
+        customer_id
+
+sinks:
+  kafka:
+    type: kafka
+    config:
+      brokers:
+        - '{{ getEnvOrDefault "SC_KAFKA_HOST" "localhost:9092" }}'
+      topic: latte
+      allow_auto_topic_creation: true
+        
+        
+#
+#        CREATE SECRET (
+#        TYPE S3,
+#        ENDPOINT 's3.localhost.localstack.cloud:4566',
+#        PROVIDER CREDENTIAL_CHAIN
+#        );
+#

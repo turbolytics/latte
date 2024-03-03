@@ -42,7 +42,7 @@ func (i Invocation) End() *time.Time {
 
 type Sourcer interface {
 	Source(ctx context.Context) (record.Result, error)
-	Window() *time.Duration
+	WindowDuration() *time.Duration
 	Type() source.Type
 }
 
@@ -258,7 +258,7 @@ func (i *Invoker) invokeHistoricTumblingWindow(ctx context.Context) error {
 	s := i.Collector.Sourcer()
 	windows, err := hw.FullWindowsSince(
 		lastWindowEnd,
-		*(s.Window()),
+		*(s.WindowDuration()),
 	)
 	if err != nil {
 		return err
