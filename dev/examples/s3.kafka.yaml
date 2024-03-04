@@ -20,16 +20,13 @@ source:
     bucket: localstack-latte
     endpoint: 's3.localhost.localstack.cloud:4566'
     prefix: 'activity-events'
-    partition: year={{.Year}}/month={{.Month}}/day={{.Day}}
-    # Each event has structure of:
-    # - user_id <string>
-    # - customer_id <string>
+    partition: 'year={{.Year}}/month={{.Month}}/day={{.Day}}/**/*.json'
     sql: |
       SELECT 
         COUNT(DISTINCT user_id) as value,
-        customer_id
+        customer_id as customer
       FROM
-        read_json_auto({{.Source}}) 
+        read_json_auto('s3://localstack-latte/activity-events/{{.Partition}}') 
       GROUP BY
         customer_id
 
@@ -37,16 +34,6 @@ sinks:
   kafka:
     type: kafka
     config:
-      brokers:
-        - '{{ getEnvOrDefault "SC_KAFKA_HOST" "localhost:9092" }}'
+      uri: '{{ getEnvOrDefault "SC_KAFKA_HOST" "localhost:9092" }}'
       topic: latte
       allow_auto_topic_creation: true
-        
-        
-#
-#        CREATE SECRET (
-#        TYPE S3,
-#        ENDPOINT 's3.localhost.localstack.cloud:4566',
-#        PROVIDER CREDENTIAL_CHAIN
-#        );
-#

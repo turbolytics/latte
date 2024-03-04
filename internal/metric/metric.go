@@ -39,9 +39,10 @@ func (m *Metric) Map() map[string]any {
 		"window":    m.Window,
 	}
 
-	for _, tag := range m.Tags {
-		k := fmt.Sprintf("tag.%s", tag)
-		s[k] = m.Tags[tag]
+	for k, v := range m.Tags {
+		tagK := fmt.Sprintf("tag.%s", k)
+		fmt.Println(k, v)
+		s[tagK] = v
 	}
 	return s
 }
@@ -60,6 +61,7 @@ func New(opts ...MetricOption) Metric {
 
 func MapsToMetrics(results []map[string]any) ([]*Metric, error) {
 	var ms []*Metric
+	fmt.Println(results)
 	for _, r := range results {
 		val, ok := r["value"]
 		if !ok {

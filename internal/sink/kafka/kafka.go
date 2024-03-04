@@ -11,7 +11,7 @@ import (
 )
 
 type config struct {
-	Brokers                []string
+	URI                    string
 	Encoding               encoding.Config
 	Topic                  string
 	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
@@ -63,7 +63,7 @@ func NewFromGenericConfig(m map[string]any) (*Kafka, error) {
 	}
 
 	w := &kafka.Writer{
-		Addr:                   kafka.TCP(conf.Brokers...),
+		Addr:                   kafka.TCP(conf.URI),
 		Topic:                  conf.Topic,
 		AllowAutoTopicCreation: conf.AllowAutoTopicCreation,
 	}

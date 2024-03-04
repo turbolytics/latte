@@ -22,6 +22,11 @@ import (
 func NewSink(c sink.Config, l *zap.Logger, validate bool) (invoker.Sinker, error) {
 	var s invoker.Sinker
 	var err error
+
+	if err := sink.ApplyTemplates(&c); err != nil {
+		return nil, err
+	}
+
 	switch c.Type {
 	case sink.TypeConsole:
 		s, err = console.NewFromGenericConfig(c.Config)

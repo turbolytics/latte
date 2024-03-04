@@ -6,10 +6,12 @@ import (
 	"github.com/turbolytics/latte/internal/collector/initializer"
 	"github.com/turbolytics/latte/internal/invoker"
 	"go.uber.org/zap"
+	"time"
 )
 
 func NewInvokeCmd() *cobra.Command {
 	var configPath string
+	var customInvocationStart string
 
 	var invokeCmd = &cobra.Command{
 		Use:   "invoke",
@@ -32,9 +34,19 @@ func NewInvokeCmd() *cobra.Command {
 				panic(err)
 			}
 
-			i, err := invoker.New(c,
+			opts := []invoker.Option{
 				invoker.WithLogger(logger),
-			)
+			}
+
+			if customInvocationStart != "" {
+				t, err := time.Parse(time.RFC3339, customInvocationStart)
+				if err != nil {
+					panic(err)
+				}
+				opts = append(opts, invoker.WithStartTime(t))
+			}
+
+			i, err := invoker.New(c, opts...)
 			if err != nil {
 				panic(err)
 			}
@@ -46,6 +58,7 @@ func NewInvokeCmd() *cobra.Command {
 	}
 
 	invokeCmd.Flags().StringVarP(&configPath, "config", "c", "", "Path to config file")
+	invokeCmd.Flags().StringVarP(&customInvocationStart, "start-time", "", "", "A CLI provided start time, used as the invocation start")
 	invokeCmd.MarkFlagRequired("config")
 
 	return invokeCmd
