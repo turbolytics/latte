@@ -6,12 +6,16 @@ import (
 	"github.com/turbolytics/latte/internal/record"
 	"go.uber.org/zap"
 	"testing"
+	"time"
 )
 
 func TestInvoker_Invoke_UnknownStrategy(t *testing.T) {
 	i := &Invoker{
 		logger:    zap.NewNop(),
 		Collector: TestConfig{},
+		now: func() time.Time {
+			return time.Now().UTC()
+		},
 	}
 	err := i.Invoke(context.Background())
 	assert.EqualError(t, err, "strategy: \"\" not supported")
@@ -34,6 +38,9 @@ func TestInvoker_Invoke_Tick_Success(t *testing.T) {
 	sink := &TestSink{}
 	i := &Invoker{
 		logger: zap.NewNop(),
+		now: func() time.Time {
+			return time.Now().UTC()
+		},
 		Collector: TestConfig{
 			invocationStrategy: TypeStrategyTick,
 			sinks:              []*TestSink{sink},

@@ -42,7 +42,7 @@ func (i Invocation) End() *time.Time {
 
 type Sourcer interface {
 	Source(ctx context.Context) (record.Result, error)
-	Window() *time.Duration
+	WindowDuration() *time.Duration
 	Type() source.Type
 }
 
@@ -86,6 +86,14 @@ type Option func(*Invoker)
 func WithLogger(l *zap.Logger) Option {
 	return func(i *Invoker) {
 		i.logger = l
+	}
+}
+
+func WithStartTime(t time.Time) Option {
+	return func(i *Invoker) {
+		i.now = func() time.Time {
+			return t
+		}
 	}
 }
 
@@ -151,11 +159,16 @@ func (i *Invoker) Source(ctx context.Context) (sr record.Result, err error) {
 		return nil, err
 	}
 
+	var numRecords int
+	if sr != nil {
+		numRecords = len(sr.Records())
+	}
+
 	i.logger.Debug("collector.Source",
 		zap.String("collector.invocation_strategy", string(i.Collector.InvocationStrategy())),
 		zap.String("id", id.String()),
 		zap.String("name", i.Collector.Name()),
-		zap.Int("results.count", len(sr.Records())),
+		zap.Int("results.count", numRecords),
 	)
 	return sr, err
 }
@@ -212,7 +225,7 @@ func (i *Invoker) invokeTick(ctx context.Context) error {
 		return err
 	}
 
-	if len(sr.Records()) == 0 {
+	if sr == nil || len(sr.Records()) == 0 {
 		i.logger.Warn(
 			"collector.Invoke",
 			zap.String("msg", "no results found"),
@@ -258,7 +271,7 @@ func (i *Invoker) invokeHistoricTumblingWindow(ctx context.Context) error {
 	s := i.Collector.Sourcer()
 	windows, err := hw.FullWindowsSince(
 		lastWindowEnd,
-		*(s.Window()),
+		*(s.WindowDuration()),
 	)
 	if err != nil {
 		return err
@@ -332,7 +345,7 @@ func (i *Invoker) Sink(ctx context.Context, res record.Result) error {
 }
 
 func (i *Invoker) Invoke(ctx context.Context) (err error) {
-	start := time.Now().UTC()
+	start := i.now()
 
 	histogram, _ := meter.Float64Histogram(
 		"collector.invoke.duration",
@@ -364,6 +377,7 @@ func (i *Invoker) Invoke(ctx context.Context) (err error) {
 	id := uuid.New()
 	i.logger.Info(
 		"collector.Invoke",
+		zap.String("invocation.start", start.String()),
 		zap.String("id", id.String()),
 		zap.String("name", i.Collector.Name()),
 	)

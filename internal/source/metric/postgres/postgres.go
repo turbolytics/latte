@@ -22,7 +22,7 @@ type Postgres struct {
 	db     *sql.DB
 }
 
-func (p *Postgres) Window() *time.Duration {
+func (p *Postgres) WindowDuration() *time.Duration {
 	return nil
 }
 

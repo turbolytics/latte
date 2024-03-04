@@ -3,18 +3,18 @@ package initializer
 import (
 	"context"
 	"fmt"
-	"github.com/turbolytics/latte/internal/collector/template"
 	"github.com/turbolytics/latte/internal/invoker"
 	"github.com/turbolytics/latte/internal/sink"
 	"github.com/turbolytics/latte/internal/sink/console"
 	"github.com/turbolytics/latte/internal/sink/file"
 	"github.com/turbolytics/latte/internal/sink/http"
 	"github.com/turbolytics/latte/internal/sink/kafka"
-	"github.com/turbolytics/latte/internal/sink/s3"
+	s3Sink "github.com/turbolytics/latte/internal/sink/s3"
 	"github.com/turbolytics/latte/internal/source"
 	"github.com/turbolytics/latte/internal/source/metric/mongodb"
 	"github.com/turbolytics/latte/internal/source/metric/postgres"
 	"github.com/turbolytics/latte/internal/source/metric/prometheus"
+	s3Source "github.com/turbolytics/latte/internal/source/metric/s3"
 	"github.com/turbolytics/latte/internal/state"
 	"go.uber.org/zap"
 )
@@ -22,6 +22,11 @@ import (
 func NewSink(c sink.Config, l *zap.Logger, validate bool) (invoker.Sinker, error) {
 	var s invoker.Sinker
 	var err error
+
+	if err := sink.ApplyTemplates(&c); err != nil {
+		return nil, err
+	}
+
 	switch c.Type {
 	case sink.TypeConsole:
 		s, err = console.NewFromGenericConfig(c.Config)
@@ -38,9 +43,9 @@ func NewSink(c sink.Config, l *zap.Logger, validate bool) (invoker.Sinker, error
 	case sink.TypeKafka:
 		s, err = kafka.NewFromGenericConfig(c.Config)
 	case sink.TypeS3:
-		s, err = s3.NewFromGenericConfig(
+		s, err = s3Sink.NewFromGenericConfig(
 			c.Config,
-			s3.WithLogger(l),
+			s3Sink.WithLogger(l),
 		)
 	default:
 		return nil, fmt.Errorf("sink type: %q not supported", c.Type)
@@ -65,12 +70,9 @@ func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer
 	var err error
 	var s invoker.Sourcer
 
-	// enabling templating across a couple of fixed, known configuration fields
-	bs, err := template.Parse([]byte(sc.Config["uri"].(string)))
-	if err != nil {
+	if err := source.ApplyTemplates(&sc); err != nil {
 		return nil, err
 	}
-	sc.Config["uri"] = string(bs)
 
 	switch sc.Type {
 	case source.TypeMetricPostgres:
@@ -88,6 +90,11 @@ func NewSourcer(sc source.Config, l *zap.Logger, validate bool) (invoker.Sourcer
 		s, err = prometheus.NewFromGenericConfig(
 			sc.Config,
 			prometheus.WithLogger(l),
+		)
+	case source.TypeMetricS3:
+		s, err = s3Source.NewFromGenericConfig(
+			sc.Config,
+			s3Source.WithLogger(l),
 		)
 	default:
 		return nil, fmt.Errorf("source type: %q unknown", sc.Type)

@@ -73,7 +73,7 @@ type TestSourcer struct {
 	tr TestResult
 }
 
-func (ts TestSourcer) Window() *time.Duration {
+func (ts TestSourcer) WindowDuration() *time.Duration {
 	return ts.w
 }
 

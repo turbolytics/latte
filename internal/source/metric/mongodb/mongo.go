@@ -25,7 +25,7 @@ type Mongo struct {
 	client *mongo.Client
 }
 
-func (m *Mongo) Window() *time.Duration {
+func (m *Mongo) WindowDuration() *time.Duration {
 	return nil
 }
 
